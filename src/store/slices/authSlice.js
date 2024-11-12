@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { SpotifyAuthService } from '../../services/spotify/SpotifyAuthService';
 import { SpotifyTokenManager } from '../../services/spotify/SpotifyTokenManager';
-import { AUTH_STATUS } from '../../services/spotify/constants';
+import { AUTH_STATUS } from '../../utils/constants';
 
 const authService = new SpotifyAuthService();
 const tokenManager = new SpotifyTokenManager(authService);
@@ -41,6 +41,14 @@ export const handleSpotifyCallback = createAsyncThunk(
   }
 );
 
+export const SPOTIFY_AUTH_STATUS = {
+    NONE: 'none',
+    PENDING: 'pending',
+    CONNECTED: 'connected',
+    EXPIRED: 'expired'
+};
+  
+
 export const refreshSpotifyToken = createAsyncThunk(
   'auth/refreshSpotifyToken',
   async (_, { getState, rejectWithValue }) => {
@@ -58,6 +66,79 @@ export const refreshSpotifyToken = createAsyncThunk(
   }
 );
 
+export const loginUser = createAsyncThunk(
+    'auth/login',
+    async (credentials, { rejectWithValue }) => {
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(credentials),
+        });
+  
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message);
+        }
+  
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        return rejectWithValue(error.message);
+      }
+    }
+);
+  
+  export const registerUser = createAsyncThunk(
+    'auth/register',
+    async (userData, { rejectWithValue }) => {
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+        });
+  
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message);
+        }
+  
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        return rejectWithValue(error.message);
+      }
+    }
+);
+
+export const handleAuthSuccess = createAsyncThunk(
+    'auth/handleAuthSuccess',
+    async (_, { getState, dispatch }) => {
+      const { auth } = getState();
+      
+      // Check if we have valid Spotify tokens
+      if (auth.spotify?.refreshToken) {
+        try {
+          await dispatch(refreshSpotifyToken()).unwrap();
+          return { success: true };
+        } catch (err) {
+          // Only initiate new OAuth if refresh fails
+          const { authUrl } = await dispatch(initiateSpotifyAuth()).unwrap();
+          return { success: false, authUrl };
+        }
+      } else {
+        // First time OAuth needed
+        const { authUrl } = await dispatch(initiateSpotifyAuth()).unwrap();
+        return { success: false, authUrl };
+      }
+    }
+);
+
 // Initial state
 const initialState = {
   status: AUTH_STATUS.IDLE,
@@ -70,7 +151,8 @@ const initialState = {
     expiresAt: null,
     codeVerifier: null,
     savedState: null,
-    authUrl: null
+    authUrl: null,
+    status: SPOTIFY_AUTH_STATUS.NONE
   },
   onboarding: {
     step: 'initial',
@@ -98,7 +180,10 @@ const authSlice = createSlice({
     },
     logout: (state) => {
       return initialState;
-    }
+    },
+    clearAuthError: (state) => {
+        state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -146,11 +231,46 @@ const authSlice = createSlice({
         state.status = AUTH_STATUS.FAILED;
         state.error = action.payload;
         state.spotify.isAuthenticated = false;
-      });
+      })
+      // Login
+    .addCase(loginUser.pending, (state) => {
+        state.status = AUTH_STATUS.AUTHENTICATING;
+        state.error = null;
+      })
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.status = AUTH_STATUS.AUTHENTICATED;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.error = null;
+      })
+      .addCase(loginUser.rejected, (state, action) => {
+        state.status = AUTH_STATUS.FAILED;
+        state.error = action.payload;
+      })
+      // Register
+      .addCase(registerUser.pending, (state) => {
+        state.status = AUTH_STATUS.AUTHENTICATING;
+        state.error = null;
+      })
+      .addCase(registerUser.fulfilled, (state, action) => {
+        state.status = AUTH_STATUS.AUTHENTICATED;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.error = null;
+      })
+      .addCase(registerUser.rejected, (state, action) => {
+        state.status = AUTH_STATUS.FAILED;
+        state.error = action.payload;
+      })
+      .addCase(handleAuthSuccess.fulfilled, (state, action) => {
+        if (action.payload.success) {
+          state.spotify.status = SPOTIFY_AUTH_STATUS.CONNECTED;
+        }
+      })
   }
 });
 
-export const { resetAuth, setOnboardingStep, completeOnboarding, logout } = authSlice.actions;
+export const { resetAuth, setOnboardingStep, completeOnboarding, logout, clearAuthError } = authSlice.actions;
 
 export const selectAuthStatus = (state) => state.auth.status;
 export const selectSpotifyAuth = (state) => state.auth.spotify;

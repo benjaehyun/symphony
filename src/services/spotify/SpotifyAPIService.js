@@ -2,7 +2,6 @@ import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import pLimit from 'p-limit';
 import { RateLimiter } from 'limiter';
-import { FEATURE_RANGES, AVAILABLE_FEATURES } from './constants';
 
 export class SpotifyAPIService {
   constructor(tokenManager) {

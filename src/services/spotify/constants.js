@@ -1,12 +1,3 @@
-export const FEATURE_RANGES = {
-  acousticness: { min: 0, max: 1 },
-  danceability: { min: 0, max: 1 },
-  energy: { min: 0, max: 1 },
-  instrumentalness: { min: 0, max: 1 },
-  valence: { min: 0, max: 1 },
-  tempo: { min: 0, max: 250 },
-  loudness: { min: -60, max: 0 }
-};
 
 export const AVAILABLE_FEATURES = {
   basic: [
@@ -24,12 +15,6 @@ export const AVAILABLE_FEATURES = {
   }
 };
 
-export const AUTH_STATUS = {
-  IDLE: 'idle',
-  AUTHENTICATING: 'authenticating',
-  AUTHENTICATED: 'authenticated',
-  FAILED: 'failed'
-};
 
 export const SPOTIFY_SCOPES = [
   'user-read-private',

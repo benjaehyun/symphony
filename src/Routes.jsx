@@ -3,8 +3,8 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 // Pages
-import Login from './pages/Login';
-import SpotifyCallback from './pages/SpotifyCallback';
+import Auth from './pages/auth/Auth';
+import SpotifyCallback from './pages/auth/SpotifyCallback';
 import Home from './pages/Home';
 
 // Layouts
@@ -17,7 +17,7 @@ const ProtectedRoute = ({ children }) => {
   const { status: profileStatus } = useSelector((state) => state.profile);
   
   if (status !== 'authenticated') {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth" replace />;
   }
 
   // Handle onboarding flow
@@ -49,16 +49,16 @@ const PublicRoute = ({ children }) => {
 
 const AppRoutes = () => {
   const location = useLocation();
-  const isAuthFlow = ['/login', '/spotify-connect', '/create-profile'].includes(location.pathname);
+  const isAuthFlow = ['/auth', '/spotify-connect', '/create-profile'].includes(location.pathname);
 
   return (
     <Routes>
       {/* Auth Flow Routes */}
       <Route 
-        path="/login" 
+        path="/auth" 
         element={
           <PublicRoute>
-            <Login />
+            <Auth />
           </PublicRoute>
         } 
       />
@@ -66,6 +66,16 @@ const AppRoutes = () => {
       <Route 
         path="/spotify/callback" 
         element={<SpotifyCallback />} 
+      />
+
+      <Route 
+        path="/create-profile" 
+        element={
+          <ProtectedRoute>
+            {/* <ProfileCreate /> */}
+            <div>Profile Create (Coming Soon)</div>
+          </ProtectedRoute>
+        } 
       />
 
       {/* Main App Routes */}

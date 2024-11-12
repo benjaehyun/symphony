@@ -1,19 +1,13 @@
 import { Buffer } from 'buffer';
+import { SPOTIFY_SCOPES, SPOTIFY_AUTH_ENDPOINTS } from './constants';
+
 
 export class SpotifyAuthService {
   constructor() {
     this.clientId = process.env.REACT_APP_SPOTIFY_CLIENT_ID;
     this.redirectUri = process.env.REACT_APP_SPOTIFY_REDIRECT_URI;
-    this.tokenEndpoint = 'https://accounts.spotify.com/api/token';
-    this.scope = [
-      'user-read-private',
-      'user-read-email',
-      'user-top-read',
-      'playlist-read-private',
-      'playlist-read-collaborative',
-      'user-library-read',
-      'user-read-recently-played'
-    ].join(' ');
+    this.tokenEndpoint = SPOTIFY_AUTH_ENDPOINTS.token;
+    this.scope = SPOTIFY_SCOPES.join(' ');
   }
 
   async generateAuthUrl() {
