@@ -1,57 +1,110 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-// import { useSelector } from 'react-redux';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
-// Public Pages
+// Pages
 import Login from './pages/Login';
-// import Register from './pages/Register';
-// import Landing from './pages/Landing';
-
-// Protected Pages
+import SpotifyCallback from './pages/SpotifyCallback';
 import Home from './pages/Home';
-// import Discover from './pages/Discover';
-// import Matches from './pages/Matches';
-// import Messages from './pages/Messages';
-// import Profile from './pages/Profile';
-// import Settings from './pages/Settings';
 
-// // Protected Route Wrapper
-// const ProtectedRoute = ({ children }) => {
-//   const { isAuthenticated } = useSelector((state) => state.auth);
-  
-//   if (!isAuthenticated) {
-//     return <Navigate to="/login" replace />;
-//   }
-  
-//   return children;
-// };
+// Layouts
+import Layout from './components/layout/Layout';
+import AuthLayout from './components/layout/AuthLayout'; // We should create this
 
-// // Public Route Wrapper (redirects to home if already authenticated)
-// const PublicRoute = ({ children }) => {
-//   const { isAuthenticated } = useSelector((state) => state.auth);
+// Protected Route with Layout Context
+const ProtectedRoute = ({ children }) => {
+  const { status, spotify } = useSelector((state) => state.auth);
+  const { status: profileStatus } = useSelector((state) => state.profile);
   
-//   if (isAuthenticated) {
-//     return <Navigate to="/home" replace />;
-//   }
+  if (status !== 'authenticated') {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Handle onboarding flow
+  if (!spotify.isAuthenticated) {
+    return <Navigate to="/spotify-connect" replace />;
+  }
+
+  if (profileStatus === 'NOT_STARTED') {
+    return <Navigate to="/create-profile" replace />;
+  }
+
+  return <Layout>{children}</Layout>;
+};
+
+// Public Route with Auth Layout
+const PublicRoute = ({ children }) => {
+  const { status } = useSelector((state) => state.auth);
+  const { status: profileStatus } = useSelector((state) => state.profile);
   
-//   return children;
-// };
+  if (status === 'authenticated') {
+    if (profileStatus === 'NOT_STARTED') {
+      return <Navigate to="/create-profile" replace />;
+    }
+    return <Navigate to="/discover" replace />;
+  }
+  
+  return <AuthLayout>{children}</AuthLayout>;
+};
 
 const AppRoutes = () => {
+  const location = useLocation();
+  const isAuthFlow = ['/login', '/spotify-connect', '/create-profile'].includes(location.pathname);
+
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* Auth Flow Routes */}
       <Route 
-        path="/" 
+        path="/login" 
         element={
-          // <ProtectedRoute>
-            <Home />
-          // </ProtectedRoute>
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
         } 
       />
       
+      <Route 
+        path="/spotify/callback" 
+        element={<SpotifyCallback />} 
+      />
 
-      {/* Catch all route */}
+      {/* Main App Routes */}
+      <Route 
+        path="/discover" 
+        element={
+          <ProtectedRoute>
+            <div>Discover (Coming Soon)</div>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/matches" 
+        element={
+          <ProtectedRoute>
+            <div>Matches (Coming Soon)</div>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/messages" 
+        element={
+          <ProtectedRoute>
+            <div>Messages (Coming Soon)</div>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/" 
+        element={
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        } 
+      />
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
