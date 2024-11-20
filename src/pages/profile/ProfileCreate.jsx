@@ -1,188 +1,210 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Card, CardContent } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Card, CardContent } from '../ui/card';
+import { Button } from '../ui/button';
+import { Alert, AlertDescription } from '../ui/alert';
 import BasicInfo from '../../components/profile/BasicInfo';
 import PhotoUpload from '../../components/profile/PhotoUpload';
-
+import MusicTaste from '../../components/profile/MusicTaste';
+import { 
+  updateProfileInfo, 
+  uploadProfilePhotos,
+  updateMusicProfile,
+  fetchUserProfile 
+} from '../../store/slices/profileSlice';
 
 const FORM_STEPS = {
-  BASIC_INFO: 'BASIC_INFO',
-  PHOTOS: 'PHOTOS',
-  PREFERENCES: 'PREFERENCES',
-  MUSIC_TASTE: 'MUSIC_TASTE',
-  REVIEW: 'REVIEW'
+  BASIC_INFO: {
+    key: 'BASIC_INFO',
+    path: '/create-profile/basic-info',
+    label: 'Basic Info',
+    Component: BasicInfo,
+  },
+  PHOTOS: {
+    key: 'PHOTOS',
+    path: '/create-profile/photos',
+    label: 'Photos',
+    Component: PhotoUpload,
+  },
+  PREFERENCES: {
+    key: 'PREFERENCES',
+    path: '/create-profile/preferences',
+    label: 'Preferences',
+    // Component: Preferences, // To be implemented
+  },
+  MUSIC_TASTE: {
+    key: 'MUSIC_TASTE',
+    path: '/create-profile/music',
+    label: 'Music Taste',
+    Component: MusicTaste,
+  },
+  REVIEW: {
+    key: 'REVIEW',
+    path: '/create-profile/review',
+    label: 'Review',
+    // Component: ProfileReview, // To be implemented
+  }
+};
+
+const initialFormData = {
+    basicInfo: {
+        name: '',
+        age: 18,
+        gender: '',
+        bio: '',
+    },
+    photos: {
+        photos: [],
+    },
+    preferences: {
+        genderPreference: [],
+        ageRange: { min: 18, max: 99 },
+        maxDistance: 25,
+    },
+    musicTaste: {
+        sourceType: '',
+        sourceId: '',
+        analyzedTracks: [],
+        analysis: {
+        acousticness: null,
+        danceability: null,
+        energy: null,
+        instrumentalness: null,
+        valence: null
+        }
+    }
 };
 
 const ProfileCreate = () => {
   const dispatch = useDispatch();
-  const [currentStep, setCurrentStep] = useState(FORM_STEPS.BASIC_INFO);
-  const [formData, setFormData] = useState({
-    // Basic Info
-    name: '',
-    age: 18,
-    gender: '',
-    bio: '',
-    
-    // Preferences
-    genderPreference: [],
-    ageRange: {
-      min: 18,
-      max: 99
-    },
-    distancePreference: 25,
-
-    // Photos
-    photos: [],
-
-    // Music
-    genres: [],
-    artists: [],
-  });
-
-  const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const { status, error, profile } = useSelector(state => state.profile);
+  const [currentStep, setCurrentStep] = useState('BASIC_INFO');
+  const [formData, setFormData] = useState(initialFormData);
+  const [stepErrors, setStepErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Progress indicator
-  const steps = [
-    { key: FORM_STEPS.BASIC_INFO, label: 'Basic Info' },
-    { key: FORM_STEPS.PHOTOS, label: 'Photos' },
-    { key: FORM_STEPS.PREFERENCES, label: 'Preferences' },
-    { key: FORM_STEPS.MUSIC_TASTE, label: 'Music Taste' },
-    { key: FORM_STEPS.REVIEW, label: 'Review' }
-  ];
+  useEffect(() => {
+    if (status !== 'NOT_STARTED') {
+      dispatch(fetchUserProfile()).then((action) => {
+        if (action.payload) {
+          const { name, age, gender, bio, photos, music } = action.payload;
+          setFormData(prev => ({
+            ...prev,
+            basicInfo: { name, age, gender, bio },
+            photos: { photos: photos || [] },
+            musicTaste: music || prev.musicTaste
+          }));
+        }
+      });
+    }
+  }, [dispatch, status]);
 
-  const currentStepIndex = steps.findIndex(step => step.key === currentStep);
+  // Sync URL with current step
+  useEffect(() => {
+    const stepFromPath = Object.values(FORM_STEPS).find(
+      step => step.path === location.pathname
+    );
+    
+    if (stepFromPath && stepFromPath.key !== currentStep) {
+      setCurrentStep(stepFromPath.key);
+    } else if (!stepFromPath) {
+      navigate(FORM_STEPS.BASIC_INFO.path, { replace: true });
+    }
+  }, [location, currentStep, navigate]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  // Store form data in localStorage to prevent loss on refresh
+  useEffect(() => {
+    const savedData = localStorage.getItem('profileFormData');
+    if (savedData) {
+      setFormData(prev => ({
+        ...prev,
+        ...JSON.parse(savedData)
+      }));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('profileFormData', JSON.stringify(formData));
+  }, [formData]);
+
+  const handleStepDataChange = (stepId, data, errors = null) => {
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [stepId.toLowerCase()]: data
     }));
-
-    // Clear error when field is modified
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-  };
-
-  const validateBasicInfo = () => {
-    const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-
-    if (!formData.age) {
-      newErrors.age = 'Age is required';
-    } else if (formData.age < 18) {
-      newErrors.age = 'You must be at least 18 years old';
-    }
-
-    if (!formData.gender) {
-      newErrors.gender = 'Please select your gender';
-    }
-
-    if (!formData.bio.trim()) {
-      newErrors.bio = 'Please tell us a bit about yourself';
-    } else if (formData.bio.length > 500) {
-      newErrors.bio = 'Bio must be less than 500 characters';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const validatePhotos = () => {
-    const newErrors = {};
     
-    if (formData.photos.length === 0) {
-      newErrors.photos = 'Please upload at least one photo';
-    }
-  
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-  
-
-  const handleNext = () => {
-    let isValid = false;
-
-    switch (currentStep) {
-        case FORM_STEPS.BASIC_INFO:
-            isValid = validateBasicInfo();
-            break;
-        case FORM_STEPS.PHOTOS:
-            isValid = validatePhotos();
-            break;
-      // Add other step validations here
-        default:
-            isValid = true;
-    }
-
-    if (isValid) {
-      setCurrentStep(steps[currentStepIndex + 1].key);
+    if (errors) {
+      setStepErrors(prev => ({
+        ...prev,
+        [stepId]: errors
+      }));
+    } else {
+      const { [stepId]: _, ...remainingErrors } = stepErrors;
+      setStepErrors(remainingErrors);
     }
   };
 
-  const handleSubmit = async () => {
+  const handleStepSubmit = async (stepId, data) => {
     setIsSubmitting(true);
     try {
-      // This will be connected to our Redux action
-      await dispatch(createProfile(formData)).unwrap();
-      // Navigate to next page after successful profile creation
-      navigate('/discover');
+      switch (stepId) {
+        case 'BASIC_INFO':
+            await dispatch(updateProfileInfo(data)).unwrap();
+            break;
+        case 'PHOTOS':
+            await dispatch(uploadProfilePhotos(data.photos)).unwrap();
+            break;
+        case 'MUSIC_TASTE':
+            await dispatch(updateMusicProfile({
+            sourceType: data.sourceType,
+            sourceId: data.sourceId,
+            analyzedTracks: data.tracks,
+            analysis: data.analysis
+            })).unwrap();
+            break;
+        // Add other step submissions
+      }
+
+      const currentStepIndex = Object.keys(FORM_STEPS).indexOf(currentStep);
+      const nextStep = Object.keys(FORM_STEPS)[currentStepIndex + 1];
+      
+      if (nextStep) {
+        navigate(FORM_STEPS[nextStep].path);
+      } else {
+        navigate('/discover');
+      }
     } catch (error) {
-      setErrors(prev => ({
-        ...prev,
-        submit: error.message
-      }));
+        console.error('Step submission error:', error);
+        setStepErrors(prev => ({
+          ...prev,
+          [stepId]: { submit: error.message }
+        }));
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   };
 
-  const renderStepContent = () => {
-    switch (currentStep) {
-    case FORM_STEPS.BASIC_INFO:
-        return (
-        <BasicInfo 
-            formData={formData}
-            onChange={handleChange}
-            errors={errors}
-        />
-        );
-    case FORM_STEPS.PHOTOS:
-        return (
-            <PhotoUpload 
-            photos={formData.photos}
-            onChange={({ photos, error }) => {
-                if (photos) {
-                    setFormData(prev => ({ ...prev, photos }));
-                }
-                if (error) {
-                    setErrors(prev => ({ ...prev, photos: error }));
-                }
-            }}
-            errors={errors}
-            />
-        );    
-        // Other steps will be added here
-        default:
-            return null;
-        }
+  const handleBack = () => {
+    const currentStepIndex = Object.keys(FORM_STEPS).indexOf(currentStep);
+    if (currentStepIndex > 0) {
+      const prevStep = Object.keys(FORM_STEPS)[currentStepIndex - 1];
+      navigate(FORM_STEPS[prevStep].path);
+    }
   };
+
+  const currentStepIndex = Object.keys(FORM_STEPS).indexOf(currentStep);
+  const StepComponent = FORM_STEPS[currentStep]?.Component;
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       {/* Progress Bar */}
       <div className="max-w-2xl mx-auto mb-8">
         <div className="flex justify-between mb-2">
-          {steps.map((step, index) => (
+          {Object.values(FORM_STEPS).map((step, index) => (
             <div 
               key={step.key}
               className={`text-sm ${
@@ -199,7 +221,7 @@ const ProfileCreate = () => {
           <div 
             className="h-full bg-spotify-green rounded-full transition-all duration-300"
             style={{ 
-              width: `${((currentStepIndex + 1) / steps.length) * 100}%` 
+              width: `${((currentStepIndex + 1) / Object.keys(FORM_STEPS).length) * 100}%` 
             }}
           />
         </div>
@@ -208,25 +230,51 @@ const ProfileCreate = () => {
       {/* Form Content */}
       <Card className="max-w-2xl mx-auto">
         <CardContent className="p-6">
-          {/* Form content will go here based on currentStep */}
-          {renderStepContent()}
+          {StepComponent && (
+            <StepComponent
+              formData={formData[currentStep.toLowerCase()]}
+              onValidSubmit={(data) => handleStepSubmit(currentStep, data)}
+              onDataChange={(data, errors) => 
+                handleStepDataChange(currentStep, data, errors)
+              }
+              errors={stepErrors[currentStep]}
+            />
+          )}
+
           {/* Navigation Buttons */}
           <div className="flex justify-between mt-6">
             {currentStepIndex > 0 && (
               <Button
                 variant="outline"
-                onClick={() => setCurrentStep(steps[currentStepIndex - 1].key)}
+                onClick={handleBack}
+                disabled={isSubmitting}
               >
                 Back
               </Button>
             )}
             <Button
               className="ml-auto"
-              onClick={currentStepIndex === steps.length - 1 ? handleSubmit : handleNext}
+              onClick={() => {
+                // Trigger form submission in the step component
+                const form = document.querySelector('form');
+                if (form) {
+                  form.dispatchEvent(new Event('submit', { cancelable: true }));
+                }
+              }}
+              disabled={isSubmitting || Object.keys(stepErrors[currentStep] || {}).length > 0}
             >
-              {currentStepIndex === steps.length - 1 ? 'Complete Profile' : 'Continue'}
+              {isSubmitting ? 'Saving...' : currentStepIndex === Object.keys(FORM_STEPS).length - 1 
+                ? 'Complete Profile' 
+                : 'Continue'}
             </Button>
           </div>
+
+          {/* Error Display */}
+          {error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
     </div>

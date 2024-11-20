@@ -104,6 +104,28 @@ export const fetchUserProfile = createAsyncThunk(
   }
 );
 
+export const updateMusicProfile = createAsyncThunk(
+  'profile/updateMusicProfile',
+  async (musicData, { getState, rejectWithValue }) => {
+    try {
+      const { auth } = getState();
+      const response = await fetch('/api/profiles/music-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${auth.token}`
+        },
+        body: JSON.stringify(musicData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update music profile');
+      return await response.json();
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 // Initial state
 const initialState = {
   status: PROFILE_STATUS.NOT_STARTED,
@@ -114,13 +136,24 @@ const initialState = {
     name: null,
     age: null,
     about: null,
-    genres: null,
-    artists: null,
     photos: [],
     spotifyId: null,
     likes: [],
     dislikes: [],
-    matches: []
+    matches: [],
+    music: {
+      sourceType: null,
+      sourceId: null,
+      analyzedTracks: [],
+      analysis: {
+        acousticness: null,
+        danceability: null,
+        energy: null,
+        instrumentalness: null,
+        valence: null
+      },
+      lastUpdated: null
+    }
   },
   uploadProgress: 0,
   photoUploadStatus: 'idle'
@@ -204,6 +237,21 @@ const profileSlice = createSlice({
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(updateMusicProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateMusicProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.profile.music = action.payload;
+        if (state.status === PROFILE_STATUS.PHOTOS_UPLOADED) {
+          state.status = PROFILE_STATUS.MUSIC_CONNECTED;
+        }
+      })
+      .addCase(updateMusicProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   }
 });
@@ -211,7 +259,7 @@ const profileSlice = createSlice({
 // Helper function to determine profile completion status
 function determineProfileStatus(profile) {
   if (!profile) return PROFILE_STATUS.NOT_STARTED;
-  if (profile.photos?.length > 0 && profile.spotifyId) {
+  if (profile.photos?.length > 0 && profile.music?.sourceId) {
     return PROFILE_STATUS.COMPLETED;
   }
   if (profile.photos?.length > 0) {
@@ -238,5 +286,7 @@ export const selectProfileLoading = (state) => state.profile.loading;
 export const selectProfileError = (state) => state.profile.error;
 export const selectPhotoUploadStatus = (state) => state.profile.photoUploadStatus;
 export const selectUploadProgress = (state) => state.profile.uploadProgress;
+export const selectMusicProfile = (state) => state.profile.profile.music;
+
 
 export default profileSlice.reducer;
