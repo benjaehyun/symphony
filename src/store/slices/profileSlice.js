@@ -19,7 +19,7 @@ export const createUserProfile = createAsyncThunk(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${auth.spotify.accessToken}`
+          'Authorization': `Bearer ${auth.token}`
         },
         body: JSON.stringify({
           userId: auth.user?.id,
@@ -44,7 +44,7 @@ export const updateProfileInfo = createAsyncThunk(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${auth.spotify.accessToken}`
+          'Authorization': `Bearer ${auth.token}`
         },
         body: JSON.stringify(profileData)
       });
@@ -72,7 +72,7 @@ export const uploadProfilePhotos = createAsyncThunk(
       const response = await fetch('/api/profiles/add-photo', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${auth.spotify.accessToken}`
+          'Authorization': `Bearer ${auth.token}`
         },
         body: formData
       });
@@ -92,7 +92,7 @@ export const fetchUserProfile = createAsyncThunk(
       const { auth } = getState();
       const response = await fetch('/api/profiles', {
         headers: {
-          'Authorization': `Bearer ${auth.spotify.accessToken}`
+          'Authorization': `Bearer ${auth.token}`
         }
       });
 

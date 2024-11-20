@@ -1,6 +1,6 @@
 import { Buffer } from 'buffer';
 import { SPOTIFY_SCOPES, SPOTIFY_AUTH_ENDPOINTS } from './constants';
-
+import AuthAPI from '../auth/auth-api';
 
 export class SpotifyAuthService {
   constructor() {
@@ -15,8 +15,6 @@ export class SpotifyAuthService {
     const codeVerifier = this.generateRandomString(64);
     const codeChallenge = await this.generateCodeChallenge(codeVerifier);
 
-    // Store PKCE values in Redux
-    // We'll implement this with our Redux setup
     return {
       url: `https://accounts.spotify.com/authorize?${new URLSearchParams({
         response_type: 'code',
@@ -33,52 +31,80 @@ export class SpotifyAuthService {
   }
 
   async handleAuthCallback(code, storedCodeVerifier) {
-    const params = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: code,
-      redirect_uri: this.redirectUri,
-      client_id: this.clientId,
-      code_verifier: storedCodeVerifier
-    });
+    try {
+      // Get tokens from Spotify
+      const params = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: this.redirectUri,
+        client_id: this.clientId,
+        code_verifier: storedCodeVerifier
+      });
 
-    const response = await fetch(this.tokenEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params
-    });
+      const response = await fetch(this.tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params
+      });
 
-    if (!response.ok) {
-      throw new SpotifyAuthError('Failed to get access token', response.status);
+      if (!response.ok) {
+        throw new SpotifyAuthError('Failed to get access token', response.status);
+      }
+
+      const tokens = await response.json();
+
+      // Store tokens in our backend
+      await AuthAPI.storeSpotifyTokens({
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        expiresIn: tokens.expires_in,
+        scope: tokens.scope.split(' ')
+      });
+
+      return tokens;
+    } catch (error) {
+      console.error('Spotify auth error:', error);
+      throw error;
     }
-
-    return await response.json();
   }
 
   async refreshAccessToken(refreshToken) {
-    const params = new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      client_id: this.clientId
-    });
+    try {
+      const params = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: this.clientId
+      });
 
-    const response = await fetch(this.tokenEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params
-    });
+      const response = await fetch(this.tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params
+      });
 
-    if (!response.ok) {
-      throw new SpotifyAuthError('Failed to refresh token', response.status);
+      if (!response.ok) {
+        throw new SpotifyAuthError('Failed to refresh token', response.status);
+      }
+
+      const tokens = await response.json();
+
+      // Update tokens in backend
+      await AuthAPI.updateSpotifyTokens({
+        accessToken: tokens.access_token,
+        expiresIn: tokens.expires_in
+      });
+
+      return tokens;
+    } catch (error) {
+      throw new SpotifyAuthError('Failed to refresh token', error.statusCode);
     }
-
-    return await response.json();
   }
 
-  // Helper methods
+  // Helper methods remain the same
   generateRandomString(length) {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     return Array.from(crypto.getRandomValues(new Uint8Array(length)))
@@ -99,7 +125,6 @@ export class SpotifyAuthService {
   }
 }
 
-// Custom error class for Spotify auth errors
 export class SpotifyAuthError extends Error {
   constructor(message, statusCode) {
     super(message);

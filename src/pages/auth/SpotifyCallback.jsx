@@ -1,14 +1,16 @@
+// pages/auth/SpotifyCallback.jsx
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { handleSpotifyCallback } from '../../store/slices/authSlice';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
+import { Alert, AlertDescription } from '../../components/ui/alert';
 
 const SpotifyCallback = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { status, error, onboarding } = useSelector((state) => state.auth);
+  const { error, onboarding, spotify } = useSelector((state) => state.auth);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -21,10 +23,16 @@ const SpotifyCallback = () => {
         return;
       }
 
+      // Verify state matches
+      if (state !== spotify.savedState) {
+        console.error('State mismatch in OAuth callback');
+        navigate('/auth');
+        return;
+      }
+
       try {
         await dispatch(handleSpotifyCallback({ code, state })).unwrap();
         
-        // Check onboarding status to determine where to redirect
         if (!onboarding.completed) {
           navigate('/create-profile');
         } else {
@@ -37,12 +45,14 @@ const SpotifyCallback = () => {
     };
 
     handleCallback();
-  }, [dispatch, navigate, searchParams]);
+  }, [dispatch, navigate, searchParams, onboarding.completed, spotify.savedState]); 
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <div className="text-destructive mb-4">Failed to connect with Spotify</div>
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>Failed to connect with Spotify</AlertDescription>
+        </Alert>
         <button 
           onClick={() => navigate('/auth')}
           className="text-spotify-green hover:underline"

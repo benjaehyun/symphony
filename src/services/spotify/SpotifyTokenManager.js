@@ -10,7 +10,8 @@ export class SpotifyTokenManager {
     }
 
     if (this.isTokenExpiringSoon(tokens.expiresAt)) {
-      return await this.refreshToken(tokens.refreshToken);
+      const newTokens = await this.refreshToken(tokens.refreshToken);
+      return newTokens.accessToken;
     }
 
     return tokens.accessToken;
@@ -23,7 +24,6 @@ export class SpotifyTokenManager {
   async refreshToken(refreshToken) {
     try {
       const response = await this.authService.refreshAccessToken(refreshToken);
-      // This will be handled by Redux action
       return {
         accessToken: response.access_token,
         refreshToken: response.refresh_token || refreshToken,
