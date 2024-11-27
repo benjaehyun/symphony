@@ -117,13 +117,17 @@ const Auth = () => {
       })).unwrap();
       
       // Check Spotify auth status
-      const result = await dispatch(handleAuthSuccess()).unwrap();
-      if (!result.success) {
-        // Only redirect if new OAuth is needed
-        window.location.href = result.authUrl;
-      } else {
-        // Already have valid Spotify tokens, proceed to main app
-        window.location.href = '/discover';
+      try {
+        const authResult = await dispatch(handleAuthSuccess()).unwrap();
+        if (!authResult.success) {
+          window.location.href = authResult.authUrl;
+        } else {
+          window.location.href = '/discover';
+        }
+      } catch (authError) {
+        // Handle auth check failure differently than login failure
+        console.error('Auth check failed:', authError);
+        // Maybe show a different error message or retry logic
       }
     } catch (err) {
       console.error('Login error:', err);

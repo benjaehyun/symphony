@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, CardContent } from '../ui/card';
-import { Button } from '../ui/button';
-import { Alert, AlertDescription } from '../ui/alert';
+import { Card, CardContent } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Alert, AlertDescription } from '../../components/ui/alert';
 import BasicInfo from '../../components/profile/BasicInfo';
 import PhotoUpload from '../../components/profile/PhotoUpload';
 import MusicTaste from '../../components/profile/MusicTaste';
+import Preferences from '../../components/profile/Preferences';
+import ProfileReview from '../../components/profile/ProfileReview';
 import { 
   updateProfileInfo, 
   uploadProfilePhotos,
   updateMusicProfile,
+  updatePreferences,
+  completeProfile,
   fetchUserProfile 
 } from '../../store/slices/profileSlice';
 
@@ -18,7 +22,7 @@ const FORM_STEPS = {
   BASIC_INFO: {
     key: 'BASIC_INFO',
     path: '/create-profile/basic-info',
-    label: 'Basic Info',
+    label: 'Basic',
     Component: BasicInfo,
   },
   PHOTOS: {
@@ -27,53 +31,64 @@ const FORM_STEPS = {
     label: 'Photos',
     Component: PhotoUpload,
   },
-  PREFERENCES: {
-    key: 'PREFERENCES',
-    path: '/create-profile/preferences',
-    label: 'Preferences',
-    // Component: Preferences, // To be implemented
-  },
   MUSIC_TASTE: {
     key: 'MUSIC_TASTE',
     path: '/create-profile/music',
     label: 'Music Taste',
     Component: MusicTaste,
   },
+  PREFERENCES: {
+    key: 'PREFERENCES',
+    path: '/create-profile/preferences',
+    label: 'Preferences',
+    Component: Preferences,
+  },
   REVIEW: {
     key: 'REVIEW',
     path: '/create-profile/review',
     label: 'Review',
-    // Component: ProfileReview, // To be implemented
+    Component: ProfileReview
   }
 };
 
 const initialFormData = {
-    basicInfo: {
-        name: '',
-        age: 18,
-        gender: '',
-        bio: '',
-    },
-    photos: {
-        photos: [],
-    },
-    preferences: {
-        genderPreference: [],
-        ageRange: { min: 18, max: 99 },
-        maxDistance: 25,
-    },
-    musicTaste: {
-        sourceType: '',
-        sourceId: '',
-        analyzedTracks: [],
-        analysis: {
-        acousticness: null,
+  basicInfo: {
+    name: '',
+    age: 18,
+    gender: '',
+    bio: '',
+  },
+  photos: {
+    photos: [],
+  },
+  preferences: {
+    genderPreference: [],
+    ageRange: { min: 18, max: 99 },
+    maxDistance: 25,
+  },
+  musicTaste: {
+    sourceType: '',
+    sourceId: '',
+    tracks: [],
+    analysis: {
+      averageFeatures: {
         danceability: null,
         energy: null,
+        acousticness: null,
         instrumentalness: null,
         valence: null
-        }
-    }
+      },
+      genreDistribution: {},
+      musicDimensions: {
+        mellow: null,
+        unpretentious: null,
+        sophisticated: null,
+        intense: null,
+        contemporary: null
+      }
+    },
+    lastUpdated: null
+  }
 };
 
 const ProfileCreate = () => {
@@ -87,21 +102,66 @@ const ProfileCreate = () => {
   const [stepErrors, setStepErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Load existing profile data if available
+  // useEffect(() => {
+  //   if (status !== 'NOT_STARTED') {
+  //     dispatch(fetchUserProfile()).then((action) => {
+  //       if (action.payload) {
+  //         const { name, age, gender, bio, photos, music, preferences } = action.payload;
+  //         setFormData(prev => ({
+  //           ...prev,
+  //           basicInfo: { name, age, gender, bio },
+  //           photos: { photos: photos || [] },
+  //           musicTaste: music || prev.musicTaste,
+  //           preferences: preferences || prev.preferences
+  //         }));
+  //       }
+  //     });
+  //   }
+  // }, [dispatch, status]);
+
+//   useEffect(() => {
+//   console.log('Profile Create mounted, status:', status);
+//   dispatch(fetchUserProfile()).then((action) => {
+//     console.log('Profile fetch result:', action);
+//     if (action.payload) {
+//       const { name, age, gender, bio, photos, music, preferences } = action.payload;
+//       setFormData(prev => ({
+//         ...prev,
+//         basicInfo: { name, age, gender, bio },
+//         photos: { photos: photos || [] },
+//         musicTaste: music || prev.musicTaste,
+//         preferences: preferences || prev.preferences
+//       }));
+//     }
+//   });
+// }, [dispatch]);
+
   useEffect(() => {
-    if (status !== 'NOT_STARTED') {
-      dispatch(fetchUserProfile()).then((action) => {
-        if (action.payload) {
-          const { name, age, gender, bio, photos, music } = action.payload;
+    console.log('Profile fetch effect triggered');
+    dispatch(fetchUserProfile())
+      .unwrap()
+      .then((action) => {
+        console.log('Profile fetch result:', action);
+        if (action) {
+          const { name, age, gender, bio, photos, music, preferences } = action;
           setFormData(prev => ({
             ...prev,
-            basicInfo: { name, age, gender, bio },
+            basicInfo: { name: name || '', age: age || 18, gender: gender || '', bio: bio || '' },
             photos: { photos: photos || [] },
-            musicTaste: music || prev.musicTaste
+            musicTaste: music || prev.musicTaste,
+            preferences: preferences || prev.preferences
           }));
         }
+      })
+      .catch(error => {
+        console.error('Profile fetch failed:', error);
+        // On 404, we'll use the initial form data
+        if (error.response?.status === 404) {
+          setFormData(initialFormData);
+        }
       });
-    }
-  }, [dispatch, status]);
+  }, [dispatch]);
 
   // Sync URL with current step
   useEffect(() => {
@@ -116,7 +176,7 @@ const ProfileCreate = () => {
     }
   }, [location, currentStep, navigate]);
 
-  // Store form data in localStorage to prevent loss on refresh
+  // Load saved form data from localStorage
   useEffect(() => {
     const savedData = localStorage.getItem('profileFormData');
     if (savedData) {
@@ -127,14 +187,17 @@ const ProfileCreate = () => {
     }
   }, []);
 
+  // Save form data to localStorage
   useEffect(() => {
     localStorage.setItem('profileFormData', JSON.stringify(formData));
   }, [formData]);
 
   const handleStepDataChange = (stepId, data, errors = null) => {
+    if (!stepId) return; // Guard against undefined stepId
+
     setFormData(prev => ({
       ...prev,
-      [stepId.toLowerCase()]: data
+      [stepId.toLowerCase()]: data || {} 
     }));
     
     if (errors) {
@@ -142,49 +205,91 @@ const ProfileCreate = () => {
         ...prev,
         [stepId]: errors
       }));
-    } else {
-      const { [stepId]: _, ...remainingErrors } = stepErrors;
-      setStepErrors(remainingErrors);
+    } else if (stepErrors) { // Guard against undefined stepErrors
+      const newErrors = { ...stepErrors };
+      delete newErrors[stepId];
+      setStepErrors(newErrors);
     }
   };
 
   const handleStepSubmit = async (stepId, data) => {
+    console.log('handleStepSubmit called with:', { stepId, data });
     setIsSubmitting(true);
     try {
       switch (stepId) {
         case 'BASIC_INFO':
-            await dispatch(updateProfileInfo(data)).unwrap();
-            break;
+          const basicInfoResult = await dispatch(updateProfileInfo(data)).unwrap();
+          if (basicInfoResult) {
+            setFormData(prev => ({
+              ...prev,
+              basicInfo: data
+            }));
+          }
+          break;
+
         case 'PHOTOS':
-            await dispatch(uploadProfilePhotos(data.photos)).unwrap();
-            break;
-        case 'MUSIC_TASTE':
-            await dispatch(updateMusicProfile({
-            sourceType: data.sourceType,
-            sourceId: data.sourceId,
-            analyzedTracks: data.tracks,
-            analysis: data.analysis
+          if (data.formData) {
+            // Batch upload/update photos
+            const photoResult = await dispatch(uploadProfilePhotos({
+              formData: data.formData,
+              action: data.action
             })).unwrap();
-            break;
-        // Add other step submissions
+            
+            if (photoResult?.photos) {
+              setFormData(prev => ({
+                ...prev,
+                photos: {
+                  photos: photoResult.photos
+                }
+              }));
+            }
+            return photoResult;
+          }
+          break;
+
+        case 'MUSIC_TASTE':
+          const musicResult = await dispatch(updateMusicProfile(data)).unwrap();
+          if (musicResult) {
+            setFormData(prev => ({
+              ...prev,
+              musicTaste: data
+            }));
+          }
+          break;
+
+        case 'PREFERENCES':
+          const prefResult = await dispatch(updatePreferences(data)).unwrap();
+          if (prefResult) {
+            setFormData(prev => ({
+              ...prev,
+              preferences: data
+            }));
+          }
+          break;
+
+        case 'REVIEW':
+          await dispatch(completeProfile(formData)).unwrap();
+          localStorage.removeItem('profileFormData');
+          navigate('/discover');
+          return;
       }
 
+      // Only proceed with navigation if the current step was completed successfully
       const currentStepIndex = Object.keys(FORM_STEPS).indexOf(currentStep);
       const nextStep = Object.keys(FORM_STEPS)[currentStepIndex + 1];
       
       if (nextStep) {
         navigate(FORM_STEPS[nextStep].path);
-      } else {
-        navigate('/discover');
       }
     } catch (error) {
-        console.error('Step submission error:', error);
-        setStepErrors(prev => ({
-          ...prev,
-          [stepId]: { submit: error.message }
-        }));
+      console.error('Step submission error:', error);
+      setStepErrors(prev => ({
+        ...prev,
+        [stepId]: { submit: error.message }
+      }));
+      return { error };
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -232,7 +337,7 @@ const ProfileCreate = () => {
         <CardContent className="p-6">
           {StepComponent && (
             <StepComponent
-              formData={formData[currentStep.toLowerCase()]}
+              formData={currentStep === 'REVIEW' ? formData : formData[currentStep.toLowerCase()] || {}}
               onValidSubmit={(data) => handleStepSubmit(currentStep, data)}
               onDataChange={(data, errors) => 
                 handleStepDataChange(currentStep, data, errors)
@@ -242,35 +347,35 @@ const ProfileCreate = () => {
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-6">
-            {currentStepIndex > 0 && (
+          {currentStep !== 'REVIEW' && (
+            <div className="flex justify-between mt-6">
+              {currentStepIndex > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={isSubmitting}
+                >
+                  Back
+                </Button>
+              )}
               <Button
-                variant="outline"
-                onClick={handleBack}
-                disabled={isSubmitting}
+                className="ml-auto"
+                onClick={() => {
+                  // Trigger form submission in the step component
+                  const form = document.querySelector('form');
+                  if (form) {
+                    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                  }
+                }}
+                disabled={isSubmitting || Object.keys(stepErrors[currentStep] || {}).length > 0}
               >
-                Back
+                {isSubmitting ? 'Saving...' : 'Continue'}
               </Button>
-            )}
-            <Button
-              className="ml-auto"
-              onClick={() => {
-                // Trigger form submission in the step component
-                const form = document.querySelector('form');
-                if (form) {
-                  form.dispatchEvent(new Event('submit', { cancelable: true }));
-                }
-              }}
-              disabled={isSubmitting || Object.keys(stepErrors[currentStep] || {}).length > 0}
-            >
-              {isSubmitting ? 'Saving...' : currentStepIndex === Object.keys(FORM_STEPS).length - 1 
-                ? 'Complete Profile' 
-                : 'Continue'}
-            </Button>
-          </div>
+            </div>
+          )}
 
           {/* Error Display */}
-          {error && (
+          {error && error !== 'Profile not found' && ( // Only show non-404 errors
             <Alert variant="destructive" className="mt-4">
               <AlertDescription>{error}</AlertDescription>
             </Alert>

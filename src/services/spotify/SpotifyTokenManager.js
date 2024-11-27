@@ -1,20 +1,34 @@
 export class SpotifyTokenManager {
   constructor(authService) {
     this.authService = authService;
-    this.tokenRefreshThreshold = 5 * 60 * 1000; // 5 minutes 
+    this.tokenRefreshThreshold = 5 * 60 * 1000; // 5 minutes
+    this._currentTokens = null;
   }
 
-  async getValidAccessToken(tokens) {
-    if (!tokens?.accessToken) {
+  async initialize() {
+    try {
+      // Get initial tokens from auth service
+      const tokens = await this.authService.getStoredTokens();
+      if (tokens) {
+        this._currentTokens = tokens;
+      }
+    } catch (error) {
+      console.error('Failed to initialize token manager:', error);
+      throw error;
+    }
+  }
+
+  async getValidAccessToken() {
+    if (!this._currentTokens?.accessToken) {
       throw new Error('No access token available');
     }
 
-    if (this.isTokenExpiringSoon(tokens.expiresAt)) {
-      const newTokens = await this.refreshToken(tokens.refreshToken);
-      return newTokens.accessToken;
+    if (this.isTokenExpiringSoon(this._currentTokens.expiresAt)) {
+      const newTokens = await this.refreshToken(this._currentTokens.refreshToken);
+      this._currentTokens = newTokens;
     }
 
-    return tokens.accessToken;
+    return this._currentTokens.accessToken;
   }
 
   isTokenExpiringSoon(expiresAt) {
@@ -23,13 +37,14 @@ export class SpotifyTokenManager {
 
   async refreshToken(refreshToken) {
     try {
-      const response = await this.authService.refreshAccessToken(refreshToken);
+      const newTokens = await this.authService.refreshAccessToken(refreshToken);
       return {
-        accessToken: response.access_token,
-        refreshToken: response.refresh_token || refreshToken,
-        expiresAt: Date.now() + (response.expires_in * 1000)
+        accessToken: newTokens.access_token,
+        refreshToken: newTokens.refresh_token || refreshToken,
+        expiresAt: Date.now() + (newTokens.expires_in * 1000)
       };
     } catch (error) {
+      this._currentTokens = null; // Clear invalid tokens
       throw new Error('Failed to refresh token');
     }
   }

@@ -5,7 +5,7 @@ const generateTokens = (userId) => {
   const accessToken = jwt.sign(
     { userId },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: '15m' }
+    { expiresIn: '4hr' }
   );
 
   const refreshToken = jwt.sign(
@@ -38,14 +38,16 @@ exports.register = async (req, res) => {
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      // sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      // sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -58,7 +60,7 @@ exports.register = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error creating user' });
+    res.status(500).json({ message: 'Error creating user', error});
   }
 };
 
@@ -85,14 +87,16 @@ exports.login = async (req, res) => {
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      // sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 15 * 60 * 1000
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      // sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
@@ -101,7 +105,8 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        isProfileComplete: user.isProfileComplete
+        isProfileComplete: user.isProfileComplete,
+        spotify: user.spotify
       }
     });
   } catch (error) {
@@ -128,7 +133,8 @@ exports.refresh = async (req, res) => {
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      // sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 15 * 60 * 1000
     });
 
@@ -138,10 +144,45 @@ exports.refresh = async (req, res) => {
   }
 };
 
+exports.checkStatus = async (req, res) => {
+  try {
+    // Since requireAuth middleware already verified the token,
+    // we can fetch the full user data
+    const user = await User.findById(req.user.id)
+      .select('-password'); // Exclude password
+
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'  // Add error codes
+      });
+    }
+
+    // Return user data with Spotify connection status
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isProfileComplete: user.isProfileComplete,
+        spotifyConnected: user.spotify?.isConnected || false,
+      },
+      tokens: {
+        needsRefresh: false
+      }
+    });
+  } catch (error) {
+    console.error('Status check error:', error);
+    res.status(500).json({ 
+      message: 'Error checking auth status',
+      code: 'STATUS_CHECK_ERROR'
+    });  }
+};
+
 exports.storeSpotifyTokens = async (req, res) => {
   try {
     const { 
-      spotifyId,
+      // spotifyId,
       accessToken,
       refreshToken,
       expiresIn,
@@ -151,7 +192,7 @@ exports.storeSpotifyTokens = async (req, res) => {
     const tokenExpiry = new Date(Date.now() + expiresIn * 1000);
 
     await User.findByIdAndUpdate(req.user.id, {
-      'spotify.id': spotifyId,
+      // 'spotify.id': spotifyId,
       'spotify.accessToken': accessToken,
       'spotify.refreshToken': refreshToken,
       'spotify.tokenExpiry': tokenExpiry,
@@ -193,5 +234,36 @@ exports.updateSpotifyTokens = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Failed to update Spotify tokens' });
+  }
+};
+
+exports.getSpotifyTokens = async (req, res) => {
+  try {
+    // Explicitly select spotify fields including accessToken which is normally excluded
+    const user = await User.findById(req.user.id)
+      .select('+spotify.accessToken spotify.refreshToken spotify.tokenExpiry spotify.isConnected');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.spotify?.isConnected) {
+      return res.status(404).json({ message: 'Spotify not connected' });
+    }
+
+    // Check if tokens exist
+    if (!user.spotify.accessToken || !user.spotify.refreshToken) {
+      return res.status(404).json({ message: 'Spotify tokens not found' });
+    }
+
+    return res.json({
+      accessToken: user.spotify.accessToken,
+      refreshToken: user.spotify.refreshToken,
+      expiresAt: user.spotify.tokenExpiry.getTime(),
+      isConnected: user.spotify.isConnected
+    });
+  } catch (error) {
+    console.error('Get Spotify tokens error:', error);
+    res.status(500).json({ message: 'Failed to get Spotify tokens' });
   }
 };

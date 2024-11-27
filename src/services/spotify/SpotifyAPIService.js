@@ -82,26 +82,47 @@ export class SpotifyAPIService {
     }
   }
 
-  async fetchProfile() {
+  async fetchPlaylists(limit = 20, offset = 0) {
     try {
+      // Create cache key that includes pagination params
+      const cacheKey = `playlists-${limit}-${offset}`;
+      
       const response = await this.makeRequest(
-        () => this.api.get('/me'),
-        'user-profile'
+        () => this.api.get('/me/playlists', {
+          params: {
+            limit,
+            offset,
+            // Optimize response size by specifying needed fields
+            fields: 'items(id,name,images,description,tracks.total),total,limit,offset'
+          }
+        }),
+        cacheKey
       );
-      return response.data;
+  
+      // Validate response
+      if (!response?.data?.items) {
+        throw new SpotifyAPIError('Invalid playlist response format', {
+          status: 500,
+          message: 'Malformed response'
+        });
+      }
+  
+      // Return with pagination metadata
+      return {
+        items: response.data.items,
+        total: response.data.total,
+        limit: response.data.limit,
+        offset: response.data.offset,
+        hasMore: (offset + response.data.items.length) < response.data.total
+      };
+  
     } catch (error) {
-      throw new SpotifyAPIError('Failed to fetch profile', error);
-    }
-  }
-
-  async fetchPlaylists(limit = 50) {
-    try {
-      const response = await this.makeRequest(
-        () => this.api.get('/me/playlists', { params: { limit } }),
-        `playlists-${limit}`
-      );
-      return response.data;
-    } catch (error) {
+      if (error.response?.status === 429) {
+        throw new SpotifyAPIError('Rate limit exceeded. Please try again later.', error);
+      }
+      if (error.response?.status === 401) {
+        throw new SpotifyAPIError('Spotify authorization expired', error);
+      }
       throw new SpotifyAPIError('Failed to fetch playlists', error);
     }
   }
@@ -150,7 +171,7 @@ export class SpotifyAPIService {
         () => this.api.get(`/playlists/${playlistId}/tracks`, {
           params: {
             limit,
-            fields: 'items(track(album(name),artists(name),id,name))'
+            fields: 'items(track(album(name),artists(id,name),id,name))'
           }
         }),
         `playlist-${playlistId}-${limit}`
@@ -198,6 +219,44 @@ export class SpotifyAPIService {
       track: topSongs.items[index]
     }));
   }
+
+  async testConnection() {
+    try {
+      // Try to fetch the user's profile as a connection test
+      await this.makeRequest(
+        () => this.api.get('/me'),
+        'test-connection'
+      );
+      return true;
+    } catch (error) {
+      throw new SpotifyAPIError('Failed to connect to Spotify API', error);
+    }
+  }
+
+
+async getArtists(artistIds) {
+  if (!artistIds?.length) return [];
+
+  try {
+    // Spotify API has a limit of 50 artists per request
+    const chunks = this.chunkArray(artistIds, 50);
+    const artistPromises = chunks.map(chunk =>
+      this.makeRequest(
+        () => this.api.get('/artists', {
+          params: { ids: chunk.join(',') }
+        }),
+        `artists-${chunk.join(',')}`
+      )
+    );
+
+    const responses = await Promise.all(artistPromises);
+    return {
+      artists: responses.flatMap(response => response.data.artists)
+    };
+  } catch (error) {
+    throw new SpotifyAPIError('Failed to fetch artists', error);
+  }
+}
 
   // Helper methods
   analyzeDailyPattern(history) {

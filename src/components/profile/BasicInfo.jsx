@@ -1,11 +1,10 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
-import { validateBasicInfo } from '../../utils/validation/profile-validation';
+import { validateBasicInfo } from '../../utils/validation/profile-schemas';
 
 const GENDER_OPTIONS = [
   { value: 'man', label: 'Man' },
@@ -27,20 +26,27 @@ const BasicInfo = ({ formData, onValidSubmit, onDataChange }) => {
     setValue(name, value);
     const currentData = { ...formData, [name]: value };
     const { isValid, errors: validationErrors } = await validateBasicInfo(currentData);
-    onDataChange(currentData, validationErrors);
+    onDataChange(currentData, isValid ? null : validationErrors);
   };
 
   useEffect(() => {
-    // Set initial form values
-    Object.entries(formData).forEach(([key, value]) => {
-      setValue(key, value);
-    });
+    if (formData) {
+      // Set initial form values
+      Object.entries(formData).forEach(([key, value]) => {
+        setValue(key, value || ''); // Add fallback for null values
+      });
+    }
   }, [formData, setValue]);
 
   const onSubmit = async (data) => {
+    console.log('Form submitted with data:', data);
     const { isValid, errors } = await validateBasicInfo(data);
+    console.log('Validation result:', { isValid, errors });
     if (isValid) {
       onValidSubmit(data);
+    } else {
+      // Update errors in parent component
+      onDataChange(data, errors);
     }
   };
 
@@ -55,7 +61,7 @@ const BasicInfo = ({ formData, onValidSubmit, onDataChange }) => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="space-y-1">
           <Label htmlFor="name">Name</Label>
           <Input
@@ -131,6 +137,7 @@ const BasicInfo = ({ formData, onValidSubmit, onDataChange }) => {
             </span>
           </div>
         </div>
+        <button type="submit" style={{ display: 'none' }} />
       </form>
     </div>
   );

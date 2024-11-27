@@ -27,7 +27,7 @@ exports.validateLogin = [
 ];
 
 exports.validateSpotifyTokens = [
-    body('spotifyId').notEmpty().withMessage('Spotify ID is required'),
+    // body('spotifyId').notEmpty().withMessage('Spotify ID is required'),
     body('accessToken').notEmpty().withMessage('Access token is required'),
     body('refreshToken').notEmpty().withMessage('Refresh token is required'),
     body('expiresIn').isNumeric().withMessage('Expiry time is required'),

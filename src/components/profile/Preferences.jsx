@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { Slider } from '../ui/slider';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
-import { validatePreferences } from '../../utils/validation/profile-validation';
+import { Alert, AlertDescription } from '../ui/alert';
+import { validatePreferences } from '../../utils/validation/profile-schemas';
 
 const GENDER_OPTIONS = [
   { value: 'man', label: 'Men' },
@@ -12,12 +13,32 @@ const GENDER_OPTIONS = [
   { value: 'other', label: 'Other' }
 ];
 
-const Preferences = ({ formData, onValidSubmit, onDataChange }) => {
+const DEFAULT_PREFERENCES = {
+  genderPreference: [],
+  ageRange: { min: 18, max: 99 },
+  maxDistance: 25
+};
+
+const Preferences = ({ formData = DEFAULT_PREFERENCES, onValidSubmit, onDataChange }) => {
   const [localData, setLocalData] = useState(formData);
+  const [validationErrors, setValidationErrors] = useState({});
   const { setValue } = useForm({
     defaultValues: formData,
     mode: 'onChange'
   });
+
+  const updateDataAndValidate = async (newData) => {
+    const validationResult = await validatePreferences(newData);
+    setLocalData(newData);
+    
+    if (validationResult.errors) {
+      setValidationErrors(validationResult.errors);
+      onDataChange(newData, validationResult.errors);
+    } else {
+      setValidationErrors({});
+      onDataChange(newData);
+    }
+  };
 
   const handleGenderToggle = async (gender) => {
     const currentPreferences = [...localData.genderPreference];
@@ -34,10 +55,8 @@ const Preferences = ({ formData, onValidSubmit, onDataChange }) => {
       genderPreference: currentPreferences
     };
 
-    const validationResult = await validatePreferences(newData);
-    setLocalData(newData);
     setValue('genderPreference', currentPreferences);
-    onDataChange(newData, validationResult.errors);
+    await updateDataAndValidate(newData);
   };
 
   const handleAgeRangeChange = async (values) => {
@@ -49,30 +68,28 @@ const Preferences = ({ formData, onValidSubmit, onDataChange }) => {
       }
     };
 
-    const validationResult = await validatePreferences(newData);
-    setLocalData(newData);
     setValue('ageRange', newData.ageRange);
-    onDataChange(newData, validationResult.errors);
+    await updateDataAndValidate(newData);
   };
 
   const handleDistanceChange = async (value) => {
     const newData = {
       ...localData,
-      maxDistance: value
+      maxDistance: value[0] // Slider returns array even for single value
     };
 
-    const validationResult = await validatePreferences(newData);
-    setLocalData(newData);
-    setValue('maxDistance', value);
-    onDataChange(newData, validationResult.errors);
+    setValue('maxDistance', value[0]);
+    await updateDataAndValidate(newData);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validationResult = await validatePreferences(localData);
+    
     if (validationResult.isValid) {
       onValidSubmit(localData);
     } else {
+      setValidationErrors(validationResult.errors);
       onDataChange(localData, validationResult.errors);
     }
   };
@@ -96,13 +113,22 @@ const Preferences = ({ formData, onValidSubmit, onDataChange }) => {
                 key={value}
                 type="button"
                 variant={localData.genderPreference.includes(value) ? "default" : "outline"}
-                className="flex-1 sm:flex-none"
+                className={`flex-1 sm:flex-none transition-colors ${
+                  localData.genderPreference.includes(value) 
+                    ? 'bg-spotify-green hover:bg-spotify-green/90' 
+                    : ''
+                }`}
                 onClick={() => handleGenderToggle(value)}
               >
                 {label}
               </Button>
             ))}
           </div>
+          {validationErrors.genderPreference && (
+            <p className="text-sm text-destructive mt-1">
+              {validationErrors.genderPreference}
+            </p>
+          )}
         </div>
 
         {/* Age Range */}
@@ -121,6 +147,11 @@ const Preferences = ({ formData, onValidSubmit, onDataChange }) => {
             onValueChange={handleAgeRangeChange}
             className="py-4"
           />
+          {validationErrors.ageRange && (
+            <p className="text-sm text-destructive">
+              {validationErrors.ageRange}
+            </p>
+          )}
         </div>
 
         {/* Distance */}
@@ -136,19 +167,29 @@ const Preferences = ({ formData, onValidSubmit, onDataChange }) => {
             max={150}
             step={1}
             value={[localData.maxDistance]}
-            onValueChange={([value]) => handleDistanceChange(value)}
+            onValueChange={handleDistanceChange}
             className="py-4"
           />
+          <p className="text-sm text-muted-foreground">
+            Show me people within {localData.maxDistance} kilometers
+          </p>
+          {validationErrors.maxDistance && (
+            <p className="text-sm text-destructive">
+              {validationErrors.maxDistance}
+            </p>
+          )}
         </div>
 
         {/* Hidden submit button for form handling */}
         <button type="submit" className="hidden" />
       </form>
 
-      {/* Display any validation errors */}
-      {localData.error && (
-        <Alert variant="destructive" className="mt-4">
-          <AlertDescription>{localData.error}</AlertDescription>
+      {/* General Error Display */}
+      {Object.keys(validationErrors).length > 0 && !validationErrors.genderPreference && !validationErrors.ageRange && !validationErrors.maxDistance && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            Please check your preferences and try again.
+          </AlertDescription>
         </Alert>
       )}
     </div>

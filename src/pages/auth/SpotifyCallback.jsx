@@ -1,4 +1,3 @@
-// pages/auth/SpotifyCallback.jsx
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';

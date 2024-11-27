@@ -32,7 +32,7 @@ class AuthAPI {
   static async storeSpotifyTokens(tokenData) {
     try {
       const response = await api.post('/auth/spotify/store-tokens', {
-        spotifyId: tokenData.spotifyId,
+        // spotifyId: tokenData.spotifyId,
         accessToken: tokenData.accessToken,
         refreshToken: tokenData.refreshToken,
         expiresIn: tokenData.expiresIn,
@@ -52,6 +52,19 @@ class AuthAPI {
       });
       return response.data;
     } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  static async getSpotifyTokens() {
+    try {
+      const response = await api.get('/auth/spotify/tokens');
+      return response.data;
+    } catch (error) {
+      // Return null instead of throwing if tokens aren't found
+      if (error.response?.status === 404) {
+        return null;
+      }
       this.handleError(error);
     }
   }

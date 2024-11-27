@@ -3,6 +3,10 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const path = require('path');
+const { errorHandler } = require('./middleware/error');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+
 
 // Load environment variables from root .env
 dotenv.config({ path: path.join(__dirname, '../.env') });
@@ -12,10 +16,15 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: process.env.CLIENT_URL,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(logger('dev'));
+
 
 // Database connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -23,10 +32,13 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // Routes (to be added)
+app.use(cookieParser());
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/matches', require('./routes/matches'));
-app.use('/api/messages', require('./routes/messages'));
+app.use('/api/profiles', require('./routes/profile'));
+// app.use('/api/matches', require('./routes/matches'));
+// app.use('/api/messages', require('./routes/messages'));
+app.use(errorHandler);
+
 
 // Production setup
 if (process.env.SERVER_NODE_ENV === 'production') {
@@ -42,11 +54,7 @@ if (process.env.SERVER_NODE_ENV === 'production') {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).send({ 
-    message: process.env.SERVER_NODE_ENV === 'development' 
-      ? err.message 
-      : 'Something went wrong!'
-  });
+  errorHandler(err, req, res, next);
 });
 
 const PORT = process.env.SERVER_PORT || 5000;

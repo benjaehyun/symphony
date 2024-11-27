@@ -1,7 +1,28 @@
 import { z } from "zod";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const audioFeaturesSchema = z.object({
+  danceability: z.number().min(0).max(1),
+  energy: z.number().min(0).max(1),
+  acousticness: z.number().min(0).max(1),
+  instrumentalness: z.number().min(0).max(1),
+  valence: z.number().min(0).max(1)
+});
+
+// Schema for MUSIC dimensions
+const musicDimensionsSchema = z.object({
+  mellow: z.number().min(0).max(1),
+  unpretentious: z.number().min(0).max(1),
+  sophisticated: z.number().min(0).max(1),
+  intense: z.number().min(0).max(1),
+  contemporary: z.number().min(0).max(1)
+});
+
+// Analysis schema including aggregated features
+const analysisSchema = z.object({
+  averageFeatures: audioFeaturesSchema,
+  genreDistribution: z.record(z.string(), z.number()),
+  musicDimensions: musicDimensionsSchema
+});
 
 export const profileValidation = {
   basicInfo: z.object({
@@ -31,11 +52,11 @@ export const profileValidation = {
         z.object({
           url: z.string().url(),
           key: z.string(),
-          order: z.number(),
+          order: z.number()
         })
       )
       .min(1, "Please upload at least one photo")
-      .max(6, "Maximum 6 photos allowed"),
+      .max(6, "Maximum 6 photos allowed")
   }),
 
   preferences: z.object({
@@ -57,13 +78,25 @@ export const profileValidation = {
   }),
 
   musicTaste: z.object({
-    sourceType: z
-      .enum(["playlist", "top_tracks"])
-      .refine((val) => ["playlist", "top_tracks"].includes(val), {
-        message: "Please select a valid music source",
-      }),
-    sourceId: z.string().optional(),
+    sourceType: z.enum(["playlist", "top_tracks"]),
+    sourceId: z.string().min(1, "Please select a playlist"),
+    tracks: z.array(z.object({
+      id: z.string(),
+      name: z.string(),
+      artists: z.array(z.string()),
+      features: audioFeaturesSchema
+    })),
+    analysis: analysisSchema,
+    lastUpdated: z.date().optional()
   }),
+
+  // Complete profile schema
+  completeProfile: z.object({
+    basicInfo: z.lazy(() => profileValidation.basicInfo),
+    photos: z.lazy(() => profileValidation.photos),
+    musicTaste: z.lazy(() => profileValidation.musicTaste),
+    preferences: z.lazy(() => profileValidation.preferences)
+  })
 };
 
 // Validation helper functions
@@ -122,6 +155,21 @@ export const validateMusicTaste = async (data) => {
       errors: error.errors.reduce((acc, curr) => ({
         ...acc,
         [curr.path[0]]: curr.message
+      }), {})
+    };
+  }
+};
+
+export const validateCompleteProfile = async (data) => {
+  try {
+    await profileValidation.completeProfile.parseAsync(data);
+    return { isValid: true, errors: null };
+  } catch (error) {
+    return {
+      isValid: false,
+      errors: error.errors.reduce((acc, curr) => ({
+        ...acc,
+        [curr.path.join('.')]: curr.message
       }), {})
     };
   }

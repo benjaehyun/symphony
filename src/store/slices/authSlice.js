@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import AuthAPI from '../../services/auth/auth-api';
 import { SpotifyAuthService } from '../../services/spotify/SpotifyAuthService';
 import { SpotifyTokenManager } from '../../services/spotify/SpotifyTokenManager';
-import { AUTH_STATUS, SPOTIFY_AUTH_STATUS } from '../../services/spotify/constants';
+import { AUTH_STATUS, SPOTIFY_AUTH_STATUS } from '../../utils/constants';
 
 const authService = new SpotifyAuthService();
 const tokenManager = new SpotifyTokenManager(authService);
@@ -67,7 +67,7 @@ export const handleSpotifyCallback = createAsyncThunk(
 
 export const handleAuthSuccess = createAsyncThunk(
   'auth/handleAuthSuccess',
-  async (_, { dispatch }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
       // Check auth status with backend
       const authStatus = await AuthAPI.checkAuthStatus();
@@ -79,8 +79,8 @@ export const handleAuthSuccess = createAsyncThunk(
 
       return { success: true };
     } catch (error) {
-      const { authUrl } = await dispatch(initiateSpotifyAuth()).unwrap();
-      return { success: false, authUrl };
+      // If it's an auth error, let the calling component handle it
+      return rejectWithValue(error.message);
     }
   }
 );

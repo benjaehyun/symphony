@@ -104,12 +104,30 @@ export class SpotifyAuthService {
     }
   }
 
-  // Helper methods remain the same
+  async getStoredTokens() {
+    try {
+      const response = await AuthAPI.getSpotifyTokens();
+      if (!response) return null;
+      
+      return {
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        expiresAt: response.expiresAt
+      };
+    } catch (error) {
+      console.error('Failed to get stored tokens:', error);
+      return null;
+    }
+  }
+
+  // Helper methods 
   generateRandomString(length) {
     const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    return Array.from(crypto.getRandomValues(new Uint8Array(length)))
-      .map(x => possible[x % possible.length])
-      .join('');
+    // return Array.from(crypto.getRandomValues(new Uint8Array(length)))
+    //   .map(x => possible[x % possible.length])
+    //   .join('');
+    const values = crypto.getRandomValues(new Uint8Array(length));
+    return values.reduce((acc, x) => acc + possible[x % possible.length], "");
   }
 
   async generateCodeChallenge(verifier) {

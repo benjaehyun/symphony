@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const { body } = require('express-validator');
 const authController = require('../controllers/auth');
-const { validateRegister, validateLogin } = require('../middleware/validation');
+const { validateRegister, validateLogin, validateSpotifyTokens } = require('../middleware/authValidation');
 const { requireAuth } = require('../middleware/auth');
 const { handleValidationErrors } = require('../middleware/error');
+const { requestLogger } = require('../services/requestLogger')
+
+router.use(requestLogger)
 
 // Public routes
 router.post('/register', 
@@ -23,8 +27,15 @@ router.post('/refresh', authController.refresh);
 
 // Protected routes
 router.get('/status', 
+  requestLogger,
   requireAuth, 
   authController.checkStatus
+);
+
+
+router.get('/spotify/tokens',
+  requireAuth,
+  authController.getSpotifyTokens
 );
 
 // Spotify OAuth routes
@@ -37,8 +48,8 @@ router.post('/spotify/store-tokens',
 
 router.put('/spotify/update-tokens',
     requireAuth,
-    body('accessToken').notEmpty(),
-    body('expiresIn').isNumeric(),
+    body('accessToken').notEmpty().withMessage('Access token is required'),
+    body('expiresIn').isNumeric().withMessage('Expiry time is required'),
     handleValidationErrors,
     authController.updateSpotifyTokens
 );

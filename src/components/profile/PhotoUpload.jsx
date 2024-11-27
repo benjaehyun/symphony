@@ -1,259 +1,334 @@
-import { useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useRef, useState, useCallback, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
-import { X, UploadCloud } from 'lucide-react';
+import { Progress } from '../ui/progress';
+import { ImagePlus, X, UploadCloud, Loader2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-import { PhotoService } from '../../services/photo-service';
-import { validatePhotoUpload } from '../../utils/validation/profile-validation';
+import ImageCropper from '../ui/image-cropper';
+import PhotoService from '../../services/photo-service';
+import {
+  uploadProfilePhotos,
+  updatePhotoOrder,
+  addStagedPhoto,
+  removeStagedPhoto,
+  updatePhotoOrderLocal,
+  clearStagedPhotos,
+  setUploadProgress,
+  selectPhotoUploadState,
+  selectAllPhotos,
+  selectUploadStatus,
+  selectUploadProgress,
+  selectPhotoUploadError,
+  PHOTO_UPLOAD_STATUS
+} from '../../store/slices/profileSlice';
 
 const MAX_FILES = 6;
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ASPECT_RATIO = 4/5;
 
-const PhotoUpload = ({ formData, onValidSubmit, onDataChange }) => {
+const PhotoUpload = ({ onValidSubmit }) => {
+  const dispatch = useDispatch();
   const fileInputRef = useRef(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState({});
-  
-  const { setValue, watch } = useForm({
-    defaultValues: formData,
-    mode: 'onChange'
-  });
+  const [cropFile, setCropFile] = useState(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [localError, setLocalError] = useState(null);
 
-  const photos = watch('photos') || [];
+  // Redux selectors
+  const photos = useSelector(selectAllPhotos);
+  const uploadStatus = useSelector(selectUploadStatus);
+  const uploadProgress = useSelector(selectUploadProgress);
+  const uploadError = useSelector(selectPhotoUploadError);
 
-  const validateAndUpdatePhotos = async (newPhotos) => {
-    const validationResult = await validatePhotoUpload({ photos: newPhotos });
-    onDataChange({ photos: newPhotos }, validationResult.errors);
-    setValue('photos', newPhotos);
-    return validationResult.isValid;
-  };
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      dispatch(clearStagedPhotos());
+    };
+  }, [dispatch]);
 
-  const handleFileSelect = async (e) => {
-    const files = Array.from(e.target.files);
-    
-    // Validate number of files
-    if (files.length + photos.length > MAX_FILES) {
-      onDataChange(
-        { photos }, 
-        { photos: `You can only upload up to ${MAX_FILES} photos` }
-      );
+  const handleFileSelect = useCallback(async (e) => {
+    const files = Array.from(e.target?.files || e);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    // Check total number of files
+    if (photos.length + files.length > MAX_FILES) {
+      setLocalError(`You can only upload up to ${MAX_FILES} photos`);
       return;
     }
 
-    setUploading(true);
-    
-    try {
-      const uploadPromises = files.map(async (file, index) => {
-        try {
-          const { url, key } = await PhotoService.uploadPhoto(
-            file,
-            (progress) => {
-              setUploadProgress(prev => ({
-                ...prev,
-                [index]: progress
-              }));
-            }
-          );
+    setLocalError(null);
 
-          return {
-            url,
-            key,
-            order: photos.length + index
-          };
-        } catch (error) {
-          console.error('Photo upload error:', error);
-          return { error: error.message };
+    for (const file of files) {
+      try {
+        // Check if file needs cropping
+        const dimensions = await PhotoService.getImageDimensions(file);
+        const currentRatio = dimensions.width / dimensions.height;
+        const needsCropping = Math.abs(currentRatio - ASPECT_RATIO) > 0.01;
+
+        if (needsCropping) {
+          setCropFile(file);
+        } else {
+          const stagedPhoto = await PhotoService.preparePhotoForUpload(file);
+          dispatch(addStagedPhoto(stagedPhoto));
+        }
+      } catch (error) {
+        console.error('Error processing file:', error);
+        setLocalError(error.message || 'Error processing file');
+      }
+    }
+  }, [dispatch, photos.length]);
+
+  const handleCropComplete = useCallback(async (croppedFile) => {
+    try {
+      const stagedPhoto = await PhotoService.preparePhotoForUpload(croppedFile);
+      dispatch(addStagedPhoto(stagedPhoto));
+    } catch (error) {
+      setLocalError(error.message || 'Error processing cropped image');
+    } finally {
+      setCropFile(null);
+    }
+  }, [dispatch]);
+
+  const handleRemovePhoto = useCallback((photoId) => {
+    dispatch(removeStagedPhoto(photoId));
+  }, [dispatch]);
+
+  const handleReorderPhotos = useCallback(({ source, destination }) => {
+    if (!destination || source.index === destination.index) return;
+
+    const newPhotoOrder = Array.from(photos).map(p => p.id);
+    const [moved] = newPhotoOrder.splice(source.index, 1);
+    newPhotoOrder.splice(destination.index, 0, moved);
+
+    dispatch(updatePhotoOrderLocal(newPhotoOrder));
+
+    // If all photos are saved (no staged photos), update on server
+    if (!photos.some(photo => PhotoService.isStaged(photo.id))) {
+      dispatch(updatePhotoOrder(newPhotoOrder));
+    }
+  }, [dispatch, photos]);
+
+  const handleSaveChanges = async () => {
+    if (uploadStatus === PHOTO_UPLOAD_STATUS.LOADING) return;
+  
+    const stagedPhotos = photos.filter(photo => PhotoService.isStaged(photo.id));
+    if (!stagedPhotos.length) {
+      setLocalError('No new photos to upload');
+      return;
+    }
+  
+    try {
+      const formData = new FormData();
+      
+      // Add each photo with a unique field name
+      stagedPhotos.forEach((photo, index) => {
+        if (photo.file instanceof File) {
+          console.log('Appending file:', photo.file.name, photo.file.type);
+          formData.append(`photos`, photo.file); // Keep the field name as 'photos'
         }
       });
-
-      const results = await Promise.all(uploadPromises);
-      
-      // Filter out errors and successful uploads
-      const errors = results.filter(r => r.error);
-      const successful = results.filter(r => !r.error);
-
-      if (errors.length > 0) {
-        onDataChange(
-          { photos }, 
-          { photos: `Some photos failed to upload: ${errors.map(e => e.error).join(', ')}` }
-        );
+  
+      // Add photo order separately
+      const photoOrder = photos.map(p => p.id);
+      formData.append('photoOrder', JSON.stringify(photoOrder));
+  
+      // Log the FormData entries
+      for (let [key, value] of formData.entries()) {
+        console.log(`FormData Entry - ${key}:`, value instanceof File ? `File: ${value.name}` : value);
       }
-
-      if (successful.length > 0) {
-        const newPhotos = [...photos, ...successful];
-        await validateAndUpdatePhotos(newPhotos);
+  
+      await dispatch(uploadProfilePhotos({ formData })).unwrap();
+      if (onValidSubmit) {
+        onValidSubmit({ photos });
       }
     } catch (error) {
-      onDataChange(
-        { photos }, 
-        { photos: 'Failed to upload photos. Please try again.' }
-      );
-    } finally {
-      setUploading(false);
-      setUploadProgress({});
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      console.error('Upload error:', error);
+      setLocalError('Failed to save changes. Please try again.');
     }
   };
 
-  const handleRemovePhoto = async (index) => {
-    try {
-      const newPhotos = [...photos];
-      const removedPhoto = newPhotos.splice(index, 1)[0];
-      
-      await PhotoService.deletePhoto(removedPhoto.key);
-      await validateAndUpdatePhotos(newPhotos);
-    } catch (error) {
-      onDataChange(
-        { photos }, 
-        { photos: 'Failed to delete photo. Please try again.' }
-      );
-    }
-  };
-
-  const handleReorderPhotos = async (result) => {
-    if (!result.destination) return;
-
-    const { source, destination } = result;
-    const newPhotos = [...photos];
-    const [draggedPhoto] = newPhotos.splice(source.index, 1);
-    newPhotos.splice(destination.index, 0, draggedPhoto);
-    
-    // Update order property
-    const reorderedPhotos = newPhotos.map((photo, index) => ({
-      ...photo,
-      order: index
-    }));
-
-    await validateAndUpdatePhotos(reorderedPhotos);
-  };
-
-  const handleSubmit = async (e) => {
+  // Drag and drop handlers
+  const handleDragOver = useCallback((e) => {
     e.preventDefault();
-    const validationResult = await validatePhotoUpload({ photos });
-    if (validationResult.isValid) {
-      onValidSubmit({ photos });
-    } else {
-      onDataChange({ photos }, validationResult.errors);
-    }
-  };
+    setIsDraggingOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    handleFileSelect(droppedFiles);
+  }, [handleFileSelect]);
+
+  const hasUnsavedChanges = photos.some(photo => PhotoService.isStaged(photo.id));
+  const isLoading = uploadStatus === PHOTO_UPLOAD_STATUS.LOADING;
 
   return (
-    <div className="space-y-6">
+    <div 
+      className="space-y-6"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold tracking-tight">Add Your Photos</h2>
         <p className="text-muted-foreground">
-          Add up to 6 photos to your profile. First photo will be your main profile picture.
-          Drag to reorder photos.
+          Add up to {MAX_FILES} photos to your profile. The first photo will be your main profile picture.
+          Drag and drop to reorder.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <DragDropContext onDragEnd={handleReorderPhotos}>
-          <Droppable droppableId="photos" direction="horizontal">
-            {(provided) => (
-              <div 
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className="grid grid-cols-2 md:grid-cols-3 gap-4"
-              >
-                {photos.map((photo, index) => (
-                  <Draggable 
-                    key={photo.key} 
-                    draggableId={photo.key} 
-                    index={index}
-                  >
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        className={cn(
-                          "relative aspect-square rounded-md overflow-hidden group",
-                          snapshot.isDragging && "ring-2 ring-primary shadow-lg"
-                        )}
-                      >
-                        <img
-                          src={photo.url}
-                          alt={`Profile photo ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            className="absolute top-2 right-2"
-                            onClick={() => handleRemovePhoto(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                          {index === 0 && (
-                            <span className="absolute bottom-2 left-2 text-xs text-white bg-black/60 px-2 py-1 rounded">
-                              Main Photo
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-
-                {/* Upload Button */}
-                {photos.length < MAX_FILES && (
-                  <div className="aspect-square rounded-md border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      className="hidden"
-                      multiple
-                      accept={ACCEPTED_TYPES.join(',')}
-                      onChange={handleFileSelect}
-                      disabled={uploading}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-full w-full flex flex-col gap-2"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
+      <DragDropContext onDragEnd={handleReorderPhotos}>
+        <Droppable droppableId="photos" direction="horizontal">
+          {(provided, snapshot) => (
+            <div 
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className={cn(
+                "grid grid-cols-2 md:grid-cols-3 gap-4",
+                snapshot.isDraggingOver && "ring-2 ring-primary rounded-lg p-4",
+                isDraggingOver && "ring-2 ring-primary-500/50"
+              )}
+            >
+              {photos.map((photo, index) => (
+                <Draggable 
+                  key={photo.id} 
+                  draggableId={photo.id} 
+                  index={index}
+                  isDragDisabled={isLoading}
+                >
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className={cn(
+                        "relative aspect-[4/5] rounded-md overflow-hidden group",
+                        snapshot.isDragging && "ring-2 ring-primary shadow-lg",
+                        PhotoService.isStaged(photo.id) && "ring-1 ring-yellow-500"
+                      )}
                     >
-                      <UploadCloud className="h-8 w-8" />
-                      <span>Upload Photo</span>
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+                      <img
+                        src={photo.url}
+                        alt={`Profile photo ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2"
+                          onClick={() => handleRemovePhoto(photo.id)}
+                          disabled={isLoading}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                        {index === 0 && (
+                          <span className="absolute bottom-2 left-2 text-xs text-white bg-black/60 px-2 py-1 rounded">
+                            Main Photo
+                          </span>
+                        )}
+                        {PhotoService.isStaged(photo.id) && (
+                          <span className="absolute bottom-2 right-2 text-xs text-yellow-400 bg-black/60 px-2 py-1 rounded">
+                            Unsaved
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
 
-        {/* Upload Progress */}
-        {uploading && Object.keys(uploadProgress).length > 0 && (
-          <div className="space-y-2 mt-4">
-            {Object.entries(uploadProgress).map(([index, progress]) => (
-              <div key={index} className="w-full bg-background-elevated rounded-full h-2">
-                <div
-                  className="bg-spotify-green h-full rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
+              {photos.length < MAX_FILES && (
+                <div className="aspect-[4/5] rounded-md border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => handleFileSelect(e)}
+                    disabled={isLoading}
+                    multiple
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-full w-full flex flex-col gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isLoading}
+                  >
+                    <ImagePlus className="h-8 w-8" />
+                    <span>Add Photos</span>
+                    <span className="text-xs text-muted-foreground">
+                      Drop files here or click to browse
+                    </span>
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
 
-        {/* Hidden submit button for form handling */}
-        <button type="submit" className="hidden" />
-      </form>
+      {isLoading && uploadProgress > 0 && (
+        <div className="space-y-2">
+          <Progress value={uploadProgress} />
+          <p className="text-sm text-muted-foreground text-center">
+            Uploading... {uploadProgress.toFixed(0)}%
+          </p>
+        </div>
+      )}
 
-      <div className="text-sm text-muted-foreground">
-        <p>Supported formats: JPG, PNG, WebP</p>
-        <p>Maximum file size: 5MB</p>
+      {hasUnsavedChanges && (
+        <Button
+          onClick={handleSaveChanges}
+          disabled={isLoading}
+          className="w-full"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving Changes...
+            </>
+          ) : (
+            'Save Changes'
+          )}
+        </Button>
+      )}
+
+      {(localError || uploadError) && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            {localError || uploadError?.message}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="text-sm text-muted-foreground space-y-1">
+        <p>• Supported formats: JPG, PNG, WebP</p>
+        <p>• Maximum file size: 10MB per photo</p>
+        <p>• Photos will be cropped to 4:5 ratio</p>
+        <p>• Drag photos to reorder them</p>
+        <p>• First photo will be your main profile picture</p>
       </div>
+
+      {cropFile && (
+        <ImageCropper
+          file={cropFile}
+          aspectRatio={ASPECT_RATIO}
+          onComplete={handleCropComplete}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
     </div>
   );
 };
