@@ -3,6 +3,7 @@ import AuthAPI from '../../services/auth/auth-api';
 import { SpotifyAuthService } from '../../services/spotify/SpotifyAuthService';
 import { SpotifyTokenManager } from '../../services/spotify/SpotifyTokenManager';
 import { AUTH_STATUS, SPOTIFY_AUTH_STATUS } from '../../utils/constants';
+import { fetchUserProfile } from './profileSlice';
 
 const authService = new SpotifyAuthService();
 const tokenManager = new SpotifyTokenManager(authService);
@@ -71,12 +72,12 @@ export const handleAuthSuccess = createAsyncThunk(
     try {
       // Check auth status with backend
       const authStatus = await AuthAPI.checkAuthStatus();
-      
-      if (!authStatus.spotifyConnected) {
+          
+      if (!authStatus.user.spotifyConnected) {
         const { authUrl } = await dispatch(initiateSpotifyAuth()).unwrap();
         return { success: false, authUrl };
       }
-
+      await dispatch(fetchUserProfile()).unwrap();
       return { success: true };
     } catch (error) {
       // If it's an auth error, let the calling component handle it
@@ -90,7 +91,7 @@ const initialState = {
   error: null,
   user: null,
   spotify: {
-    isAuthenticated: false,
+    isConnected: false,
     status: SPOTIFY_AUTH_STATUS.NONE,
     codeVerifier: null,  // Only used during OAuth flow
     savedState: null,    // Only used during OAuth flow

@@ -7,6 +7,7 @@ import {
   clearAuthError,
   handleAuthSuccess 
 } from '../../store/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -19,7 +20,7 @@ const Auth = () => {
   const dispatch = useDispatch();
   const { status, error } = useSelector((state) => state.auth);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const navigate = useNavigate()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -122,7 +123,7 @@ const Auth = () => {
         if (!authResult.success) {
           window.location.href = authResult.authUrl;
         } else {
-          window.location.href = '/discover';
+          navigate('/discover')
         }
       } catch (authError) {
         // Handle auth check failure differently than login failure

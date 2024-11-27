@@ -404,7 +404,7 @@ exports.completeProfile = async (req, res) => {
 
     // Update user model to reflect completed profile
     // await req.user.updateOne({ isProfileComplete: true });
-    const updatedProfile = await Profile.findOneAndUpdate(
+    const updatedUser = await User.findOneAndUpdate(
       { _id: req.user.id },{ isProfileComplete: true })
 
     console.log('updated user model')

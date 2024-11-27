@@ -11,28 +11,24 @@ import ProfileCreate from './pages/profile/ProfileCreate'
 // Layouts
 import Layout from './components/layout/Layout';
 import AuthLayout from './components/layout/AuthLayout'; 
+import { LoadingSpinner } from './components/ui/loading-spinner';
 
 // Protected Route with Layout Context
 const ProtectedRoute = ({ children, skipProfileCheck = false }) => {
-  const { status, spotify } = useSelector((state) => state.auth);
-  const { status: profileStatus } = useSelector((state) => state.profile);
+  const { status } = useSelector((state) => state.auth);
+  const { status: profileStatus, loading } = useSelector((state) => state.profile);
+
+  if (status === 'authenticated' && loading) {
+    return <LoadingSpinner />;
+  }
   
   if (status !== 'authenticated') {
     return <Navigate to="/auth" replace />;
   }
-
-  // Handle onboarding flow
-  // if (!spotify.isConnected) {
-  //   return <Navigate to="/spotify-connect" replace />;
-  // }
-
+  
   if (!skipProfileCheck && profileStatus === 'NOT_STARTED') {
     return <Navigate to="/create-profile/basic-info" replace />;
   }
-
-  // if (profileStatus === 'NOT_STARTED') {
-  //   return <Navigate to="/create-profile" replace />;
-  // }
 
   return <Layout>{children}</Layout>;
 };
