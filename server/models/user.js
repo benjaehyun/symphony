@@ -24,15 +24,15 @@ const userSchema = new mongoose.Schema({
         id: String,
         refreshToken: String,
         accessToken: {
-        type: String,
-        select: false  // Won't be included in queries by default
+            type: String,
+            select: false  // Won't be included in queries by default
         },
         tokenExpiry: Date,
         lastRefreshed: Date,
         scope: [String],
         isConnected: {
-        type: Boolean,
-        default: false
+            type: Boolean,
+            default: false
         },
         connectionError: String
     },

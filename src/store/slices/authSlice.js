@@ -16,7 +16,11 @@ export const loginUser = createAsyncThunk(
       const data = await AuthAPI.login(credentials);
       return data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      // Preserve the error code for proper handling
+      return rejectWithValue({
+        message: error.message,
+        code: error.code
+      });
     }
   }
 );
@@ -28,7 +32,10 @@ export const registerUser = createAsyncThunk(
       const data = await AuthAPI.register(userData);
       return data;
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue({
+        message: error.message,
+        code: error.code
+      });
     }
   }
 );
@@ -77,8 +84,12 @@ export const handleAuthSuccess = createAsyncThunk(
         const { authUrl } = await dispatch(initiateSpotifyAuth()).unwrap();
         return { success: false, authUrl };
       }
-      await dispatch(fetchUserProfile()).unwrap();
-      return { success: true };
+      // await dispatch(fetchUserProfile());
+      return { 
+        success: true,
+        isProfileComplete: authStatus.user.isProfileComplete,
+        spotifyConnected: authStatus.user.spotifyConnected
+      };
     } catch (error) {
       // If it's an auth error, let the calling component handle it
       return rejectWithValue(error.message);
@@ -113,6 +124,7 @@ const authSlice = createSlice({
     },
     completeOnboarding: (state) => {
       state.onboarding.completed = true;
+      state.onboarding.step = 'complete';
     },
     clearAuthError: (state) => {
       state.error = null;
@@ -144,9 +156,11 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(registerUser.fulfilled, (state, action) => {
+        console.log('Register fulfilled - Setting auth status to AUTHENTICATED');
         state.status = AUTH_STATUS.AUTHENTICATED;
         state.user = action.payload.user;
         state.error = null;
+        state.onboarding.step = 'spotify'; 
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.status = AUTH_STATUS.FAILED;
@@ -188,6 +202,7 @@ const authSlice = createSlice({
       .addCase(handleAuthSuccess.fulfilled, (state, action) => {
         if (action.payload.success) {
           state.spotify.status = SPOTIFY_AUTH_STATUS.CONNECTED;
+          state.spotify.isConnected = action.payload.spotifyConnected;
         }
       });
   }

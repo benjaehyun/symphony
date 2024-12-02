@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const AUTH_ERROR_CODES = require('../config/authErrorCodes');
 
 const generateTokens = (userId) => {
   const accessToken = jwt.sign(
@@ -24,7 +25,10 @@ exports.register = async (req, res) => {
     // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'Email already exists' });
+      return res.status(400).json({ 
+        message: 'An account with this email already exists',
+        code: AUTH_ERROR_CODES.EMAIL_EXISTS 
+      });
     }
 
     // Create new user
@@ -40,7 +44,7 @@ exports.register = async (req, res) => {
       secure: process.env.NODE_ENV === 'production',
       // sameSite: 'strict',
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000 // 15 minutes
+      maxAge: 4* 60 * 60 * 1000 // 4hr
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
@@ -60,7 +64,10 @@ exports.register = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error creating user', error});
+    res.status(500).json({ 
+      message: 'Error creating account',
+      code: AUTH_ERROR_CODES.SERVER_ERROR
+    });
   }
 };
 
@@ -71,13 +78,19 @@ exports.login = async (req, res) => {
     // Find user
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ 
+        message: 'No account found with this email',
+        code: AUTH_ERROR_CODES.EMAIL_NOT_FOUND 
+      });
     }
 
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ 
+        message: 'Invalid email or password',
+        code: AUTH_ERROR_CODES.INVALID_CREDENTIALS 
+      });
     }
 
     // Generate tokens
@@ -89,7 +102,7 @@ exports.login = async (req, res) => {
       secure: process.env.NODE_ENV === 'production',
       // sameSite: 'strict',
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000
+      maxAge: 4* 60 * 60 * 1000
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
@@ -106,11 +119,14 @@ exports.login = async (req, res) => {
         name: user.name,
         email: user.email,
         isProfileComplete: user.isProfileComplete,
-        spotify: user.spotify
+        // spotify: user.spotify
       }
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error logging in' });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      code: AUTH_ERROR_CODES.SERVER_ERROR
+    });
   }
 };
 
@@ -124,23 +140,35 @@ exports.refresh = async (req, res) => {
   try {
     const { refreshToken } = req.cookies;
     if (!refreshToken) {
-      return res.status(401).json({ message: 'No refresh token' });
+      return res.status(401).json({ 
+        message: 'No refresh token provided',
+        code: AUTH_ERROR_CODES.NO_TOKEN 
+      });
+    }
+    
+    try {
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+      const tokens = generateTokens(decoded.userId);
+      res.cookie('accessToken', tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        // sameSite: 'strict',
+        sameSite: 'lax',
+        maxAge: 4* 60 * 60 * 1000
+      });
+      res.json({ message: 'Token refreshed successfully' });
+    } catch (jwtError) {
+      return res.status(401).json({ 
+        message: 'Invalid or expired refresh token',
+        code: AUTH_ERROR_CODES.REFRESH_TOKEN_EXPIRED
+      });
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const tokens = generateTokens(decoded.userId);
-
-    res.cookie('accessToken', tokens.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      // sameSite: 'strict',
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000
-    });
-
-    res.json({ message: 'Token refreshed successfully' });
   } catch (error) {
-    res.status(401).json({ message: 'Invalid refresh token' });
+    res.status(500).json({ 
+      message: 'Error refreshing token',
+      code: AUTH_ERROR_CODES.SERVER_ERROR
+    });
   }
 };
 
@@ -169,14 +197,16 @@ exports.checkStatus = async (req, res) => {
       },
       tokens: {
         needsRefresh: false
-      }
+      },
+      spotify: user.spotify
     });
   } catch (error) {
     console.error('Status check error:', error);
     res.status(500).json({ 
       message: 'Error checking auth status',
       code: 'STATUS_CHECK_ERROR'
-    });  }
+    });  
+  }
 };
 
 exports.storeSpotifyTokens = async (req, res) => {

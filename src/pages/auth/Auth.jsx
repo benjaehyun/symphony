@@ -8,7 +8,7 @@ import {
   handleAuthSuccess 
 } from '../../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
-
+import { AUTH_ERROR_CODES } from '../../utils/auth/authErrorCodes';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
@@ -88,16 +88,48 @@ const Auth = () => {
   };
 
   const handleAuthError = (error) => {
-    // Handle specific error cases
-    switch (error.toLowerCase()) {
-      case 'invalid_credentials':
-        return 'Invalid email or password';
-      case 'email_exists':
+    const errorCode = error?.code;
+    
+    switch (errorCode) {
+      // Registration Errors
+      case AUTH_ERROR_CODES.EMAIL_EXISTS:
         return 'An account with this email already exists';
-      case 'network_error':
-        return 'Unable to connect to the server. Please check your internet connection';
-      case 'spotify_auth_failed':
+      case AUTH_ERROR_CODES.INVALID_EMAIL_FORMAT:
+        return 'Please enter a valid email address';
+      case AUTH_ERROR_CODES.WEAK_PASSWORD:
+        return 'Password must be at least 8 characters long';
+      case AUTH_ERROR_CODES.INVALID_NAME:
+        return 'Please enter a valid name';
+        
+      // Login Errors
+      case AUTH_ERROR_CODES.EMAIL_NOT_FOUND:
+        return 'No account found with this email';
+      case AUTH_ERROR_CODES.INVALID_CREDENTIALS:
+        return 'Invalid email or password';
+      case AUTH_ERROR_CODES.ACCOUNT_DISABLED:
+        return 'This account has been disabled';
+        
+      // Token Errors
+      case AUTH_ERROR_CODES.TOKEN_EXPIRED:
+      case AUTH_ERROR_CODES.INVALID_TOKEN:
+      case AUTH_ERROR_CODES.NO_TOKEN:
+      case AUTH_ERROR_CODES.REFRESH_TOKEN_EXPIRED:
+        return 'Your session has expired. Please log in again';
+        
+      // Spotify Errors
+      case AUTH_ERROR_CODES.SPOTIFY_AUTH_FAILED:
         return 'Failed to connect to Spotify. Please try again';
+      case AUTH_ERROR_CODES.SPOTIFY_NOT_CONNECTED:
+        return 'Please connect your Spotify account';
+        
+      // General Errors
+      case AUTH_ERROR_CODES.NETWORK_ERROR:
+        return 'Unable to connect to the server. Please check your internet connection';
+      case AUTH_ERROR_CODES.SERVER_ERROR:
+        return 'An unexpected error occurred. Please try again later';
+      case AUTH_ERROR_CODES.VALIDATION_ERROR:
+        return 'Please check your input and try again';
+        
       default:
         return 'An unexpected error occurred. Please try again';
     }
@@ -122,6 +154,8 @@ const Auth = () => {
         const authResult = await dispatch(handleAuthSuccess()).unwrap();
         if (!authResult.success) {
           window.location.href = authResult.authUrl;
+        } else if (!authResult.isProfileComplete){
+          navigate('/create-profile')
         } else {
           navigate('/discover')
         }

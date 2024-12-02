@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchUserProfile } from './store/slices/profileSlice';
 
 // Pages
 import Auth from './pages/auth/Auth';
@@ -11,42 +12,57 @@ import ProfileCreate from './pages/profile/ProfileCreate'
 // Layouts
 import Layout from './components/layout/Layout';
 import AuthLayout from './components/layout/AuthLayout'; 
+import ProfileCreationLayout from './components/layout/ProfileCreationLayout';
 import { LoadingSpinner } from './components/ui/loading-spinner';
 
 // Protected Route with Layout Context
 const ProtectedRoute = ({ children, skipProfileCheck = false }) => {
   const { status } = useSelector((state) => state.auth);
   const { status: profileStatus, loading } = useSelector((state) => state.profile);
+  const location = useLocation()
+  // const dispatch = useDispatch();
 
-  if (status === 'authenticated' && loading) {
-    return <LoadingSpinner />;
-  }
+  // useEffect(() => {
+  //   if (status === 'authenticated' && !profileStatus && !loading) {
+  //     dispatch(fetchUserProfile());
+  //   }
+  // }, [status, profileStatus, loading, dispatch]);
+  const isProfileCreation = location.pathname.startsWith('/create-profile');
+
+
+  // if (status === 'authenticated' && loading) {
+  //   return <LoadingSpinner />;
+  // }
   
   if (status !== 'authenticated') {
     return <Navigate to="/auth" replace />;
   }
   
-  if (!skipProfileCheck && profileStatus === 'NOT_STARTED') {
-    return <Navigate to="/create-profile/basic-info" replace />;
+  // if (!skipProfileCheck && profileStatus === 'NOT_STARTED') {
+  //   return <Navigate to="/create-profile/basic-info" replace />;
+  // }
+
+  if (isProfileCreation) {
+    return children;
   }
 
   return <Layout>{children}</Layout>;
 };
 
 // Public Route with Auth Layout
-const PublicRoute = ({ children }) => {
-  const { status } = useSelector((state) => state.auth);
-  const { status: profileStatus } = useSelector((state) => state.profile);
+// const PublicRoute = ({ children }) => {
+//   const { status } = useSelector((state) => state.auth);
+//   const { status: profileStatus } = useSelector((state) => state.profile);
   
-  if (status === 'authenticated') {
-    if (profileStatus === 'NOT_STARTED') {
-      return <Navigate to="/create-profile" replace />;
-    }
-    return <Navigate to="/discover" replace />;
-  }
+//   if (status === 'authenticated') {
+//     if (profileStatus === 'NOT_STARTED') {
+//       return <Navigate to="/create-profile" replace />;
+//     }
+//     return <Navigate to="/discover" replace />;
+//   }
   
-  return <AuthLayout>{children}</AuthLayout>;
-};
+//   return <AuthLayout>{children}</AuthLayout>;
+// };
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -58,9 +74,9 @@ const AppRoutes = () => {
       <Route 
         path="/auth" 
         element={
-          <PublicRoute>
+          <AuthLayout>
             <Auth />
-          </PublicRoute>
+          </AuthLayout>
         } 
       />
       
@@ -83,7 +99,9 @@ const AppRoutes = () => {
           path="*"
           element={
             <ProtectedRoute skipProfileCheck={true}>
-              <ProfileCreate />
+              <ProfileCreationLayout>
+                <ProfileCreate />
+              </ProfileCreationLayout>
             </ProtectedRoute>
           } 
         />

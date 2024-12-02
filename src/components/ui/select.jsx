@@ -34,7 +34,8 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+        "relative z-50 min-w-[8rem] overflow-hidden rounded-md border shadow-md",
+        "bg-background border-border",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
@@ -52,6 +53,8 @@ const SelectContent = React.forwardRef(({ className, children, position = "poppe
       <SelectPrimitive.Viewport
         className={cn(
           "p-1",
+          // Ensure viewport also has solid background
+          "bg-background",
           position === "popper" &&
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
         )}
@@ -70,6 +73,10 @@ const SelectItem = React.forwardRef(({ className, children, ...props }, ref) => 
       "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm",
       "outline-none focus:bg-accent focus:text-accent-foreground",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      // Ensure solid background on hover
+      "hover:bg-accent hover:text-accent-foreground",
+      // Add solid background for non-hover state
+      "bg-background",
       className
     )}
     {...props}

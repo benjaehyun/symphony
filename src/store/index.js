@@ -5,13 +5,13 @@ import { combineReducers } from 'redux';
 
 import authReducer from './slices/authSlice';
 import profileReducer from './slices/profileSlice';
-import musicReducer from './slices/musicSlice';
+// import musicReducer from './slices/musicSlice';
 
 // Combine all reducers
 const rootReducer = combineReducers({
   auth: authReducer,
   profile: profileReducer,
-  music: musicReducer
+  // music: musicReducer
 });
 
 // Root persist configuration

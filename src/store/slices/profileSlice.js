@@ -155,7 +155,10 @@ export const initializeUserProfile = createAsyncThunk(
 
 export const fetchUserProfile = createAsyncThunk(
   'profile/fetchUserProfile',
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
+    const state = getState();
+    console.log('Fetching profile - Auth status:', state.auth.status);
+    console.log('Fetching profile - Profile status:', state.profile.status);
     try {
       const response = await ProfileAPI.getProfile();
       return response;
@@ -173,9 +176,8 @@ const initialState = {
     id: null,
     name: null,
     age: null,
-    about: null,
+    bio: null,
     photos: [],
-    spotifyId: null,
     likes: [],
     dislikes: [],
     matches: [],
@@ -234,18 +236,15 @@ const profileSlice = createSlice({
         action.payload.id
       ];
     },
-    
     removeStagedPhoto: (state, action) => {
       state.photoUpload.stagedPhotos = state.photoUpload.stagedPhotos
         .filter(photo => photo.id !== action.payload);
       state.photoUpload.photoOrder = state.photoUpload.photoOrder
         .filter(id => id !== action.payload);
     },
-    
     updatePhotoOrderLocal: (state, action) => {
       state.photoUpload.photoOrder = action.payload;
     },
-    
     clearStagedPhotos: (state) => {
       // Cleanup staged photos
       state.photoUpload.stagedPhotos.forEach(photo => {
@@ -257,16 +256,17 @@ const profileSlice = createSlice({
       state.photoUpload.photoOrder = state.photoUpload.savedPhotos
         .map(photo => photo.id);
     },
-    
     setUploadProgress: (state, action) => {
       state.photoUpload.uploadProgress = action.payload;
     },
-    
     resetPhotoUploadStatus: (state) => {
       state.photoUpload.status = PHOTO_UPLOAD_STATUS.IDLE;
       state.photoUpload.error = null;
       state.photoUpload.uploadProgress = 0;
-    }
+    },
+    setProfileLoading: (state, action) => {
+      state.loading = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -427,7 +427,8 @@ export const {
   updatePhotoOrderLocal,
   clearStagedPhotos,
   setUploadProgress,
-  resetPhotoUploadStatus
+  resetPhotoUploadStatus,
+  setProfileLoading
 } = profileSlice.actions;
 
 // Selectors

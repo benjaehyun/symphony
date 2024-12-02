@@ -92,7 +92,7 @@ const MusicTaste = ({ formData, onValidSubmit, onDataChange }) => {
       const response = await api.fetchPlaylists(PLAYLISTS_PER_PAGE, 0);
       console.log('Initial playlists fetched:', response);
       
-      const filteredPlaylists = response.items.filter(playlist => playlist.tracks.total > 0);
+      const filteredPlaylists = response.items.filter(playlist => playlist?.tracks?.total > 0);
       console.log('Filtered playlists:', filteredPlaylists);
       
       setPlaylists(filteredPlaylists);
@@ -127,7 +127,7 @@ const MusicTaste = ({ formData, onValidSubmit, onDataChange }) => {
       console.log('Fetching more playlists with offset:', offset);
       
       const response = await api.fetchPlaylists(PLAYLISTS_PER_PAGE, offset);
-      const filteredPlaylists = response.items.filter(playlist => playlist.tracks.total > 0);
+      const filteredPlaylists = response.items.filter(playlist => playlist?.tracks?.total > 0);
       
       setPlaylists(prev => [...prev, ...filteredPlaylists]);
       setPlaylistPagination(prev => ({

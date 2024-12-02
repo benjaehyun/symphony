@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { handleSpotifyCallback } from '../../store/slices/authSlice';
+import { handleSpotifyCallback, setOnboardingStep } from '../../store/slices/authSlice';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
 import { Alert, AlertDescription } from '../../components/ui/alert';
+import { setProfileLoading } from '../../store/slices/profileSlice'; 
 
 const SpotifyCallback = () => {
   const dispatch = useDispatch();
@@ -13,6 +14,7 @@ const SpotifyCallback = () => {
 
   useEffect(() => {
     const handleCallback = async () => {
+      // dispatch(setProfileLoading(false));
       const code = searchParams.get('code');
       const state = searchParams.get('state');
 
@@ -31,10 +33,12 @@ const SpotifyCallback = () => {
 
       try {
         await dispatch(handleSpotifyCallback({ code, state })).unwrap();
-        
+        dispatch(setOnboardingStep('profile'));
         if (!onboarding.completed) {
+          dispatch(setProfileLoading(false));
           navigate('/create-profile');
         } else {
+          dispatch(setProfileLoading(false));
           navigate('/discover');
         }
       } catch (err) {

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { AUTH_ERROR_CODES } from '../../utils/auth/authErrorCodes'
 
 // Create base axios instance with default config
 const api = axios.create({
@@ -90,40 +91,77 @@ class AuthAPI {
   // Error handling
   static handleError(error) {
     if (error.response) {
-      // Server responded with error
-      throw new Error(error.response.data.message || 'Authentication failed');
+      throw {
+        message: error.response.data.message || 'Authentication failed',
+        code: error.response.data.code,
+        status: error.response.status
+      };
     } else if (error.request) {
-      // Request made but no response
-      throw new Error('Network error. Please try again.');
+      throw {
+        message: 'Network error. Please try again.',
+        code: 'NETWORK_ERROR'
+      };
     } else {
-      // Something else went wrong
-      throw new Error('An unexpected error occurred');
+      throw {
+        message: 'An unexpected error occurred',
+        code: 'UNKNOWN_ERROR'
+      };
     }
   }
 }
 
 // Axios interceptors for handling auth
+// api.interceptors.response.use(
+//   response => response,
+//   async error => {
+//     const originalRequest = error.config;
+//     // const errorCode = error.response?.data?.code;
+//     const errorCode = error.response?.code;
+//     // Only attempt refresh for token-related 401s
+//     if (error.response?.status === 401 && 
+//       !originalRequest._retry && 
+//       [
+//         AUTH_ERROR_CODES.TOKEN_EXPIRED,
+//         AUTH_ERROR_CODES.INVALID_TOKEN
+//       ].includes(errorCode)) {
+//       originalRequest._retry = true;
+      
+//       try {
+//         await api.post('/auth/refresh');
+//         return api(originalRequest);
+//       } catch (refreshError) {
+//         // If refresh fails, clear auth state and redirect to login
+//         return Promise.reject(refreshError);
+//       }
+//     }
+
+//     // Pass through non-token related auth errors
+//     return Promise.reject(error);
+//   }
+// );
+
 api.interceptors.response.use(
   response => response,
   async error => {
     const originalRequest = error.config;
 
-    // Handle token refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        // Attempt to refresh token
-        await api.post('/auth/refresh');
-        // Retry original request
-        return api(originalRequest);
-      } catch (refreshError) {
-        // Handle refresh failure
-        return Promise.reject(refreshError);
-      }
+    // Don't retry if:
+    if (originalRequest._retry || // Already retried
+        error.response?.status === 404 || // Not found (expected for new profiles)
+        error.response?.status !== 401 || // Not an auth error
+        originalRequest.url.includes('/auth/refresh')) // Is refresh token request
+    {
+      // Pass through the error to be handled by the calling code
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    try {
+      originalRequest._retry = true; // Mark as retried
+      await api.post('/auth/refresh');
+      return api(originalRequest);
+    } catch (refreshError) {
+      return Promise.reject(error); // Return original error if refresh fails
+    }
   }
 );
 

@@ -220,18 +220,18 @@ export class SpotifyAPIService {
     }));
   }
 
-  async testConnection() {
-    try {
-      // Try to fetch the user's profile as a connection test
-      await this.makeRequest(
-        () => this.api.get('/me'),
-        'test-connection'
-      );
-      return true;
-    } catch (error) {
-      throw new SpotifyAPIError('Failed to connect to Spotify API', error);
-    }
-  }
+  // async testConnection() {
+  //   try {
+  //     // Try to fetch the user's profile as a connection test
+  //     await this.makeRequest(
+  //       () => this.api.get('/me'),
+  //       'test-connection'
+  //     );
+  //     return true;
+  //   } catch (error) {
+  //     throw new SpotifyAPIError('Failed to connect to Spotify API', error);
+  //   }
+  // }
 
 
 async getArtists(artistIds) {

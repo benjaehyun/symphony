@@ -165,18 +165,27 @@ api.interceptors.response.use(
   async error => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      
-      try {
-        await axios.post(`${process.env.REACT_APP_API_URL || '/api'}/auth/refresh`, null, { withCredentials: true });
-        return api(originalRequest);
-      } catch (refreshError) {
-        return Promise.reject(refreshError);
-      }
+    // Don't retry if:
+    if (originalRequest._retry || // Already retried
+        error.response?.status === 404 || // Not found (expected for new profiles)
+        error.response?.status !== 401 || // Not an auth error
+        originalRequest.url.includes('/auth/refresh')) // Is refresh token request
+    {
+      // Pass through the error to be handled by the calling code
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    try {
+      originalRequest._retry = true; // Mark as retried
+      await axios.post(
+        `${process.env.REACT_APP_API_URL || '/api'}/auth/refresh`, 
+        null, 
+        { withCredentials: true }
+      );
+      return api(originalRequest);
+    } catch (refreshError) {
+      return Promise.reject(error); // Return original error if refresh fails
+    }
   }
 );
 

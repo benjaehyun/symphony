@@ -31,7 +31,7 @@ class SpotifyAPIInstance {
         this._instance = new SpotifyAPIService(tokenManager);
         
         // Test connection
-        await this._instance.testConnection();
+        // await this._instance.testConnection();
         console.log('Spotify API initialized successfully');
         
         return this._instance;

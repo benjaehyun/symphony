@@ -17,6 +17,7 @@ import {
   completeProfile,
   fetchUserProfile 
 } from '../../store/slices/profileSlice';
+import { setOnboardingStep, completeOnboarding } from '../../store/slices/authSlice';
 
 const FORM_STEPS = {
   BASIC_INFO: {
@@ -34,7 +35,7 @@ const FORM_STEPS = {
   MUSIC_TASTE: {
     key: 'MUSIC_TASTE',
     path: '/create-profile/music',
-    label: 'Music Taste',
+    label: 'Music',
     Component: MusicTaste,
   },
   PREFERENCES: {
@@ -96,7 +97,8 @@ const ProfileCreate = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  const { status, error, profile } = useSelector(state => state.profile);
+  const { error, profile, loading } = useSelector(state => state.profile);
+  const { status, onboarding } = useSelector((state) => state.auth);
   const [currentStep, setCurrentStep] = useState('BASIC_INFO');
   const [formData, setFormData] = useState(initialFormData);
   const [stepErrors, setStepErrors] = useState({});
@@ -137,31 +139,72 @@ const ProfileCreate = () => {
 //   });
 // }, [dispatch]);
 
+  // useEffect(() => {
+  //     console.log('ProfileCreate effect triggered');
+  //   console.log('Current profile:', profile);
+  //   console.log('Loading state:', loading);
+  //   dispatch(fetchUserProfile())
+  //     .unwrap()
+  //     .then((action) => {
+  //       console.log('Profile fetch result:', action);
+  //         if (action) {
+  //           const { name, age, gender, bio, photos, music, preferences } = action;
+  //           setFormData(prev => ({
+  //             ...prev,
+  //             basicInfo: { name: name || '', age: age || 18, gender: gender || '', bio: bio || '' },
+  //             photos: { photos: photos || [] },
+  //             musicTaste: music || prev.musicTaste,
+  //             preferences: preferences || prev.preferences
+  //           }));
+  //         }
+  //       })
+  //       .catch(error => {
+  //         console.error('Profile fetch failed:', error);
+  //         // On 404, we'll use the initial form data
+  //         if (error.response?.status === 404) {
+  //           setFormData(initialFormData);
+  //         }
+  //       });
+  //   }, [dispatch]);
   useEffect(() => {
-    console.log('Profile fetch effect triggered');
-    dispatch(fetchUserProfile())
-      .unwrap()
-      .then((action) => {
-        console.log('Profile fetch result:', action);
-        if (action) {
-          const { name, age, gender, bio, photos, music, preferences } = action;
-          setFormData(prev => ({
-            ...prev,
-            basicInfo: { name: name || '', age: age || 18, gender: gender || '', bio: bio || '' },
-            photos: { photos: photos || [] },
-            musicTaste: music || prev.musicTaste,
-            preferences: preferences || prev.preferences
-          }));
-        }
-      })
-      .catch(error => {
-        console.error('Profile fetch failed:', error);
-        // On 404, we'll use the initial form data
-        if (error.response?.status === 404) {
-          setFormData(initialFormData);
-        }
-      });
-  }, [dispatch]);
+    // Don't fetch if we're already loading
+    if (loading) return;
+    
+    // Don't fetch if we already have profile data
+    // if (profile && Object.keys(profile).length > 0) return;
+    
+    // Only fetch if we're authenticated and past the Spotify connection step
+    const allowedSteps = ['profile', 'complete'];
+    if (status === 'authenticated' ) {
+      console.log('Initiating profile fetch - Current onboarding step:', onboarding.step);
+      dispatch(fetchUserProfile())
+        .unwrap()
+        .then((action) => {
+          console.log('Profile fetch successful:', action);
+          if (action) {
+            setFormData(prev => ({
+              ...prev,
+              basicInfo: { 
+                name: action.name || '', 
+                age: action.age || 18, 
+                gender: action.gender || '', 
+                bio: action.bio || '' 
+              },
+              photos: { photos: action.photos || [] },
+              musicTaste: action.music || prev.musicTaste,
+              preferences: action.preferences || prev.preferences
+            }));
+          }
+        })
+        .catch(error => {
+          console.error('Profile fetch failed:', error);
+          // On 404, we'll use the initial form data
+          if (error.response?.status === 404) {
+            setFormData(initialFormData);
+          }
+        });
+    }
+  }, [dispatch, loading, profile, status, onboarding?.step]);
 
   // Sync URL with current step
   useEffect(() => {
@@ -220,6 +263,7 @@ const ProfileCreate = () => {
         case 'BASIC_INFO':
           const basicInfoResult = await dispatch(updateProfileInfo(data)).unwrap();
           if (basicInfoResult) {
+            dispatch(setOnboardingStep('photos'));
             setFormData(prev => ({
               ...prev,
               basicInfo: data
@@ -236,6 +280,7 @@ const ProfileCreate = () => {
             })).unwrap();
             
             if (photoResult?.photos) {
+              dispatch(setOnboardingStep('music'));
               setFormData(prev => ({
                 ...prev,
                 photos: {
@@ -250,6 +295,7 @@ const ProfileCreate = () => {
         case 'MUSIC_TASTE':
           const musicResult = await dispatch(updateMusicProfile(data)).unwrap();
           if (musicResult) {
+            dispatch(setOnboardingStep('preferences'));
             setFormData(prev => ({
               ...prev,
               musicTaste: data
@@ -260,6 +306,7 @@ const ProfileCreate = () => {
         case 'PREFERENCES':
           const prefResult = await dispatch(updatePreferences(data)).unwrap();
           if (prefResult) {
+            dispatch(setOnboardingStep('review'));
             setFormData(prev => ({
               ...prev,
               preferences: data
@@ -269,6 +316,7 @@ const ProfileCreate = () => {
 
         case 'REVIEW':
           await dispatch(completeProfile(formData)).unwrap();
+          dispatch(completeOnboarding);
           localStorage.removeItem('profileFormData');
           navigate('/discover');
           return;
