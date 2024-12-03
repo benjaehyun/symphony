@@ -415,125 +415,19 @@ exports.completeProfile = async (req, res) => {
   }
 };
 
-// Profile Discovery & Matching
-exports.getDiscoverProfiles = async (req, res) => {
-  try {
-    const profile = await Profile.findOne({ user: req.user.id });
-    
-    if (!profile) {
-      return res.status(404).json({ message: 'Profile not found' });
-    }
 
-    // Get profiles based on preferences
-    const profiles = await Profile.find({
-      _id: { $ne: profile._id },
-      status: 'COMPLETED',
-      age: { 
-        $gte: profile.preferences.ageRange.min,
-        $lte: profile.preferences.ageRange.max
-      },
-      gender: { $in: profile.preferences.genderPreference },
-      location: {
-        $near: {
-          $geometry: profile.location,
-          $maxDistance: profile.preferences.maxDistance * 1000 // Convert km to meters
-        }
-      }
-    }).limit(20);
 
-    res.json(profiles);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch discover profiles' });
-  }
-};
-
-exports.likeProfile = async (req, res) => {
-  try {
-    const { profileId } = req.params;
-    const profile = await Profile.findOne({ user: req.user.id });
-
-    if (!profile.likes.includes(profileId)) {
-      profile.likes.push(profileId);
-      await profile.save();
-
-      // Check for mutual like
-      const otherProfile = await Profile.findById(profileId);
-      if (otherProfile.likes.includes(profile._id)) {
-        profile.matches.push(profileId);
-        otherProfile.matches.push(profile._id);
-        await Promise.all([profile.save(), otherProfile.save()]);
-        return res.json({ match: true, profile: otherProfile });
-      }
-    }
-
-    res.json({ match: false });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to like profile' });
-  }
-};
-
-exports.dislikeProfile = async (req, res) => {
-  try {
-    const { profileId } = req.params;
-    const profile = await Profile.findOne({ user: req.user.id });
-
-    if (!profile.dislikes.includes(profileId)) {
-      profile.dislikes.push(profileId);
-      await profile.save();
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to dislike profile' });
-  }
-};
-
-exports.getMatches = async (req, res) => {
-  try {
-    const profile = await Profile.findOne({ user: req.user.id })
-      .populate('matches', '-music.tracks'); // Exclude track data for performance
-
-    if (!profile) {
-      return res.status(404).json({ message: 'Profile not found' });
-    }
-
-    res.json(profile.matches);
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch matches' });
-  }
-};
-
-exports.unmatch = async (req, res) => {
-  try {
-    const { matchId } = req.params;
-    const profile = await Profile.findOne({ user: req.user.id });
-    const otherProfile = await Profile.findById(matchId);
-
-    if (!profile || !otherProfile) {
-      return res.status(404).json({ message: 'Profile not found' });
-    }
-
-    profile.matches = profile.matches.filter(id => id.toString() !== matchId);
-    otherProfile.matches = otherProfile.matches.filter(id => id.toString() !== profile._id.toString());
-
-    await Promise.all([profile.save(), otherProfile.save()]);
-
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to unmatch' });
-  }
-};
 
 // Debug/Development
-if (process.env.NODE_ENV === 'development') {
-  exports.resetProfile = async (req, res) => {
-    try {
-      await Profile.findOneAndDelete({ user: req.user.id });
-      res.json({ message: 'Profile reset successful' });
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to reset profile' });
-    }
-  };
-}
+// if (process.env.NODE_ENV === 'development') {
+//   exports.resetProfile = async (req, res) => {
+//     try {
+//       await Profile.findOneAndDelete({ user: req.user.id });
+//       res.json({ message: 'Profile reset successful' });
+//     } catch (error) {
+//       res.status(500).json({ message: 'Failed to reset profile' });
+//     }
+//   };
+// }
 
 module.exports = exports;

@@ -8,6 +8,7 @@ import Auth from './pages/auth/Auth';
 import SpotifyCallback from './pages/auth/SpotifyCallback';
 import Home from './pages/Home';
 import ProfileCreate from './pages/profile/ProfileCreate'
+import DiscoveryPage from './pages/Discovery';
 
 // Layouts
 import Layout from './components/layout/Layout';
@@ -112,7 +113,7 @@ const AppRoutes = () => {
         path="/discover" 
         element={
           <ProtectedRoute>
-            <div>Discover (Coming Soon)</div>
+            <DiscoveryPage/>
           </ProtectedRoute>
         } 
       />

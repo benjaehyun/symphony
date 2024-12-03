@@ -35,6 +35,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use(cookieParser());
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profiles', require('./routes/profile'));
+app.use('/api/discovery', require('./routes/discovery'));
 // app.use('/api/matches', require('./routes/matches'));
 // app.use('/api/messages', require('./routes/messages'));
 app.use(errorHandler);

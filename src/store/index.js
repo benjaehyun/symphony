@@ -5,12 +5,14 @@ import { combineReducers } from 'redux';
 
 import authReducer from './slices/authSlice';
 import profileReducer from './slices/profileSlice';
+import discoveryReducer from './slices/discoverySlice';
 // import musicReducer from './slices/musicSlice';
 
 // Combine all reducers
 const rootReducer = combineReducers({
   auth: authReducer,
   profile: profileReducer,
+  discovery: discoveryReducer,
   // music: musicReducer
 });
 
@@ -19,7 +21,9 @@ const persistConfig = {
   key: 'root',
   storage,
   whitelist: ['auth', 'profile'], // Persist auth and profile state
-  blacklist: ['music'], // Don't persist music state (we'll fetch fresh)
+  blacklist: ['discovery',
+    // 'music'
+  ], // Don't persist music state (we'll fetch fresh)
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -39,7 +43,8 @@ export const store = configureStore({
         ],
         ignoredPaths: [
           'music.audioFeatures',
-          'auth.spotify.tokenManager'
+          'auth.spotify.tokenManager',
+          'discovery.profiles'
         ]
       },
     }),

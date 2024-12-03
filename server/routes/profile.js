@@ -138,38 +138,12 @@ router.post('/complete',
   profileController.completeProfile
 );
 
-// Profile Discovery/Matching
-router.get('/discover',
-  profileController.getDiscoverProfiles
-);
-
-router.post('/like/:profileId',
-  profileController.likeProfile
-);
-
-router.post('/dislike/:profileId',
-  profileController.dislikeProfile
-);
-
-// Profile Location
-router.put('/location',
-  profileController.updateLocation
-);
-
-// Match Management
-router.get('/matches',
-  profileController.getMatches
-);
-
-router.delete('/matches/:matchId',
-  profileController.unmatch
-);
 
 // Debug/Admin Routes (can be protected by admin middleware in production)
-if (process.env.NODE_ENV === 'development') {
-  router.delete('/debug/reset',
-    profileController.resetProfile
-  );
-}
+// if (process.env.NODE_ENV === 'development') {
+//   router.delete('/debug/reset',
+//     profileController.resetProfile
+//   );
+// }
 
 module.exports = router;
