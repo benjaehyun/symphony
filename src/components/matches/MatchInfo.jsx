@@ -1,23 +1,61 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ScrollArea } from '../ui/scroll-area';
+import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Music2, Sparkles, Disc, BarChart3 } from 'lucide-react';
+import { 
+  X, Music2, MessageCircle, MoreVertical, 
+  Sparkles, Disc, BarChart3 
+} from 'lucide-react';
 import { 
   MusicDimensionsChart, 
   GenreDistribution, 
   AudioFeatures 
-} from './MusicVisualization';
+} from '../discovery/MusicVisualization';
 
-const DesktopMusicPanel = ({ profile }) => {
+const MatchInfo = ({ match, onClose, onUnmatch, showTopBar = true }) => {
+  const navigate = useNavigate();
+  const profile = match.matchedProfile;
+
+  const handleMessage = () => {
+    navigate(`/messages/${match._id}`);
+    onClose();
+  };
+
   return (
-    <div className="h-full flex flex-col">
-      <div className="p-6 border-b border-border">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Music2 className="w-5 h-5 text-spotify-green" />
-          Music Profile
-        </h2>
+    <div className="flex flex-col h-full">
+      {/* Top Bar - Only show in mobile */}
+      {showTopBar && (
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={onClose}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onUnmatch}
+          >
+            <MoreVertical className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
+
+      {/* Actions Bar */}
+      <div className="px-6 py-4 border-b border-border">
+        <Button 
+          className="w-full"
+          onClick={handleMessage}
+        >
+          <MessageCircle className="h-4 w-4 mr-2" />
+          Message
+        </Button>
       </div>
 
+      {/* Music Profile Section */}
       <ScrollArea className="flex-1">
         <div className="p-6">
           <Tabs defaultValue="overview" className="w-full">
@@ -44,56 +82,29 @@ const DesktopMusicPanel = ({ profile }) => {
                   <h3 className="font-semibold">Music Match</h3>
                 </div>
                 <div className="text-3xl font-bold text-spotify-green">
-                  {Math.round(profile.compatibilityScore * 100)}%
+                  {Math.round(match.compatibilityScore * 100)}%
                 </div>
               </div>
 
-              {/* Music Selection */}
-              <div className="rounded-lg bg-background p-4">
-                <h3 className="font-semibold mb-2">Music Selection</h3>
-                <p className="text-sm text-muted-foreground">
-                  Based on their {profile.music.sourceType === 'playlist' ? 'playlist' : 'top tracks'}
-                </p>
-              </div>
-
-              {/* Music Dimensions */}
+              {/* Music Style */}
               <div className="rounded-lg bg-background p-4">
                 <h3 className="font-semibold mb-4">Music Style</h3>
                 <MusicDimensionsChart 
                   dimensions={profile.music.analysis.musicDimensions} 
                 />
               </div>
-
-              {/* Preview of Top Genres */}
-              {/* <div className="rounded-lg bg-background p-4">
-                <h3 className="font-semibold mb-4">Top Genres</h3>
-                <div className="flex gap-2 flex-wrap">
-                  {Array.from(profile.music.analysis.genreDistribution)
-                    .sort(([,a], [,b]) => b - a)
-                    .slice(0, 3)
-                    .map(([genre]) => (
-                      <span 
-                        key={genre}
-                        className="px-3 py-1 bg-background-highlight rounded-full text-sm"
-                      >
-                        {genre}
-                      </span>
-                    ))
-                  }
-                </div>
-              </div> */}
             </TabsContent>
 
-            <TabsContent value="genres" className="space-y-6">
+            <TabsContent value="genres">
               <div className="rounded-lg bg-background p-4">
-                <h3 className="font-semibold mb-4">Genre Distribution</h3>
+                <h3 className="font-semibold mb-4">Top Genres</h3>
                 <GenreDistribution 
                   genres={profile.music.analysis.genreDistribution} 
                 />
               </div>
             </TabsContent>
 
-            <TabsContent value="analysis" className="space-y-6">
+            <TabsContent value="analysis">
               <div className="rounded-lg bg-background p-4">
                 <h3 className="font-semibold mb-4">Audio Features</h3>
                 <AudioFeatures 
@@ -108,4 +119,4 @@ const DesktopMusicPanel = ({ profile }) => {
   );
 };
 
-export default DesktopMusicPanel;
+export default MatchInfo;

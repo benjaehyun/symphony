@@ -6,13 +6,16 @@ import {
   selectDiscoveryProfiles,
   fetchDiscoveryProfiles,
   likeProfile,
-  dislikeProfile
+  dislikeProfile,
+  selectNewMatch,
+  clearNewMatch
 } from '../store/slices/discoverySlice';
 import { Heart, X } from 'lucide-react';
-import { ProfileCard, NoMoreProfiles } from '../components/discovery/ProfileCard';
+import { NoMoreProfiles } from '../components/discovery/ProfileCard';
 import MobileMusicSheet from '../components/discovery/MobileMusicSheet';
 import DesktopMusicPanel from '../components/discovery/DesktopMusicPanel';
 import ProfileStack from '../components/discovery/ProfileStack';
+import MatchNotification from '../components/discovery/MatchNotification';
 import { LoadingSpinner } from '../components/ui/loading-spinner';
 import useMediaQuery from '../hooks/useMediaQuery';
 
@@ -22,6 +25,7 @@ const Discovery = () => {
   const currentProfile = useSelector(selectCurrentProfile);
   const profiles = useSelector(selectDiscoveryProfiles);  
   const status = useSelector(selectDiscoveryStatus);
+  const newMatch = useSelector(selectNewMatch);
   const dispatch = useDispatch();
 
   console.log('Discovery Component State:', {
@@ -57,6 +61,10 @@ const Discovery = () => {
     }
   };
 
+  const handleCloseMatch = () => {
+    dispatch(clearNewMatch());
+  };
+
   const currentProfileIndex = currentProfile 
     ? profiles.findIndex(p => p._id === currentProfile._id)
     : 0;
@@ -73,14 +81,14 @@ const Discovery = () => {
     <div className="h-full">
       <div className="h-full flex flex-col md:flex-row">
         {/* Main Profile View */}
-        <div className={`relative flex-1 w-full p-4 min-h-0 ${
+        <div className={`relative flex-1 w-full p-4 min-h-0 mt-6 ${
         // Only apply max-width and margin when we have profiles
           currentProfile 
             ? 'md:max-w-2xl md:mx-auto md:mr-0' 
             : 'md:max-w-none'
         }`}>
           {currentProfile ? (
-             <div onClick={handleProfileTap} className='h-[calc(100vh-16rem)] md:h-[600px] w-full'>
+             <div onClick={handleProfileTap} className='h-[calc(100vh-20rem)] md:h-[600px] w-full'>
               <ProfileStack
                 profiles={profiles}
                 currentIndex={currentProfileIndex}
@@ -94,12 +102,12 @@ const Discovery = () => {
           
           {/* Action Buttons - Fixed on mobile, absolute on desktop */}
           {currentProfile && (
-            <div className="fixed md:absolute bottom-20 md:bottom-8 left-0 right-0 flex justify-center gap-4 px-4">
+            <div className="fixed md:absolute bottom-32 md:bottom-8 left-0 right-0 flex justify-center gap-4 px-4">
               <button 
                 onClick={handleDislike}
                 className="w-14 h-14 rounded-full bg-background-elevated shadow-lg 
                          flex items-center justify-center hover:bg-background-highlight 
-                         transition-colors"
+                         transition-colors border border-border/50"
               >
                 <X className="w-6 h-6 text-rose-500" />
               </button>
@@ -107,7 +115,7 @@ const Discovery = () => {
                 onClick={handleLike}
                 className="w-14 h-14 rounded-full bg-background-elevated shadow-lg 
                          flex items-center justify-center hover:bg-background-highlight 
-                         transition-colors"
+                         transition-colors border border-border/50"
               >
                 <Heart className="w-6 h-6 text-spotify-green" />
               </button>
@@ -131,6 +139,11 @@ const Discovery = () => {
           />
         )}
       </div>
+      <MatchNotification 
+        isOpen={!!newMatch}
+        onClose={handleCloseMatch}
+        match={newMatch}
+      />
     </div>
   );
 };

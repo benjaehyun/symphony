@@ -1,15 +1,23 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Search, Heart, MessageCircle } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { selectUnreadCount } from '../../store/slices/matchesSlice';
 import { cn } from '../../utils/cn';
 
 const Sidebar = () => {
   const location = useLocation();
+  const unreadMatchCount = useSelector(selectUnreadCount);
   
   const navigationItems = [
     { name: 'Home', path: '/', icon: Home },
     { name: 'Discover', path: '/discover', icon: Search },
-    { name: 'Matches', path: '/matches', icon: Heart },
+    { 
+      name: 'Matches', 
+      path: '/matches', 
+      icon: Heart,
+      badge: unreadMatchCount > 0 ? unreadMatchCount : null 
+    },
     { name: 'Messages', path: '/messages', icon: MessageCircle },
   ];
 
@@ -31,6 +39,7 @@ const Sidebar = () => {
             className={cn(
               "flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors",
               "hover:bg-background-highlight",
+              "relative",
               isActivePath(item.path)
                 ? "text-primary bg-background-highlight"
                 : "text-muted-foreground"
@@ -38,6 +47,13 @@ const Sidebar = () => {
           >
             <item.icon className="h-5 w-5 mr-3" />
             {item.name}
+            {item.badge && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[1.25rem] h-5 
+                             flex items-center justify-center rounded-full bg-spotify-green 
+                             text-xs text-white px-1">
+                {item.badge}
+              </span>
+            )}
           </Link>
         ))}
       </nav>

@@ -3,7 +3,7 @@ import { Card } from '../ui/card';
 import { Music2 } from 'lucide-react';
 import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion';
 
-const SWIPE_THRESHOLD = 100;
+const SWIPE_THRESHOLD = 200;
 const SWIPE_VELOCITY = 500;
 
 const ProfileCard = ({ 

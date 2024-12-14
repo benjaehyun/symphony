@@ -8,7 +8,9 @@ import Auth from './pages/auth/Auth';
 import SpotifyCallback from './pages/auth/SpotifyCallback';
 import Home from './pages/Home';
 import ProfileCreate from './pages/profile/ProfileCreate'
-import DiscoveryPage from './pages/Discovery';
+import Discovery from './pages/Discovery';
+import Matches from './pages/Matches';
+import Messages from './pages/Messages';
 
 // Layouts
 import Layout from './components/layout/Layout';
@@ -113,28 +115,38 @@ const AppRoutes = () => {
         path="/discover" 
         element={
           <ProtectedRoute>
-            <DiscoveryPage/>
+            <Discovery/>
           </ProtectedRoute>
         } 
       />
 
-      <Route 
-        path="/matches" 
-        element={
+      <Route path="/matches">
+        <Route index element={
           <ProtectedRoute>
-            <div>Matches (Coming Soon)</div>
+            <Matches />
           </ProtectedRoute>
-        } 
-      />
+        } />
 
-      <Route 
-        path="/messages" 
-        element={
+        <Route path=":matchId" element={
           <ProtectedRoute>
-            <div>Messages (Coming Soon)</div>
+            <Matches />
           </ProtectedRoute>
-        } 
-      />
+        } />
+      </Route>
+
+      <Route path="/messages">
+        <Route index element={
+          <ProtectedRoute>
+            <Messages />
+          </ProtectedRoute>
+        } />
+
+        <Route path=":matchId" element={
+          <ProtectedRoute>
+            <Messages />
+          </ProtectedRoute>
+        } />
+      </Route>
 
       <Route 
         path="/" 

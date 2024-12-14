@@ -1,4 +1,5 @@
 const express = require('express');
+const setupSocketIO = require('./middleware/socket');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -17,12 +18,11 @@ const app = express();
 app.use(cors({
   origin: process.env.CLIENT_URL,
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(logger('dev'));
 
 
@@ -31,14 +31,6 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
-// Routes (to be added)
-app.use(cookieParser());
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/profiles', require('./routes/profile'));
-app.use('/api/discovery', require('./routes/discovery'));
-// app.use('/api/matches', require('./routes/matches'));
-// app.use('/api/messages', require('./routes/messages'));
-app.use(errorHandler);
 
 
 // Production setup
@@ -52,11 +44,6 @@ if (process.env.SERVER_NODE_ENV === 'production') {
   });
 }
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  errorHandler(err, req, res, next);
-});
 
 const PORT = process.env.SERVER_PORT || 5000;
 
@@ -73,16 +60,61 @@ const io = require('socket.io')(server, {
   }
 });
 
-// Socket connection handling
 io.on('connection', (socket) => {
-  console.log('A user connected');
-  
+  console.log('Client connected');
+
   socket.on('disconnect', () => {
-    console.log('User disconnected');
+    console.log('Client disconnected');
   });
-  
-  // Socket event handlers will be added here
 });
+
+// Routes (to be added)
+app.use(setupSocketIO(io));
+
+app.use(cookieParser());
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/profiles', require('./routes/profile'));
+app.use('/api/discovery', require('./routes/discovery'));
+app.use('/api/matches', require('./routes/matches'));
+app.use('/api/messages', require('./routes/messages'));
+app.use(errorHandler);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  errorHandler(err, req, res, next);
+});
+
+// Socket connection handling
+// io.on('connection', (socket) => {
+//   console.log('A user connected');
+  
+//   socket.on('disconnect', () => {
+//     console.log('User disconnected');
+//   });
+  
+//   // Socket event handlers will be added here
+// });
+// io.on('connection', (socket) => {
+//   // Authenticate socket connection
+//   socket.on('authenticate', (userId) => {
+//     socket.join(userId); // Join user's room
+//   });
+
+//   // Socket config for messaging
+//   socket.on('join:match', (matchId) => {
+//     socket.join(matchId);
+//   });
+  
+//   socket.on('leave:match', (matchId) => {
+//     socket.leave(matchId);
+//   });
+  
+//   // Handle disconnection
+//   socket.on('disconnect', () => {
+//     // Cleanup if needed
+//   });
+// });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {

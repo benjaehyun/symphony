@@ -7,7 +7,7 @@ import {
 } from '../ui/sheet';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Music2, Sparkles } from 'lucide-react';
+import { Music2, Sparkles, Disc, BarChart3 } from 'lucide-react';
 import { 
   MusicDimensionsChart, 
   GenreDistribution, 
@@ -29,9 +29,18 @@ const MobileMusicSheet = ({ profile, isOpen, onOpenChange }) => {
           <div className="px-6">
             <Tabs defaultValue="overview" className="w-full">
               <TabsList className="w-full">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="genres">Genres</TabsTrigger>
-                <TabsTrigger value="analysis">Analysis</TabsTrigger>
+                <TabsTrigger value="overview" className="flex-1">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="genres" className="flex-1">
+                  <Disc className="w-4 h-4 mr-2" />
+                  Genres
+                </TabsTrigger>
+                <TabsTrigger value="analysis" className="flex-1">
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Analysis
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6 mt-4">

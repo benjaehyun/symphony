@@ -69,6 +69,31 @@ const trackSchema = new mongoose.Schema({
   features: audioFeaturesSchema
 }, { _id: false });
 
+const matchSchema = new mongoose.Schema({
+  matchedProfile: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Profile',
+    required: true
+  },
+  matchedAt: {
+    type: Date,
+    default: Date.now
+  },
+  isRead: {
+    type: Boolean,
+    default: false
+  },
+  lastInteractionAt: {
+    type: Date,
+    default: Date.now
+  },
+  status: {
+    type: String,
+    enum: ['active', 'unmatch_pending', 'unmatched'],
+    default: 'active'
+  }
+});
+
 const profileSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -174,10 +199,7 @@ const profileSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Profile'
   }],
-  matches: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Profile'
-  }],
+  matches: [matchSchema],
 
   // Location (for distance-based matching)
   location: {

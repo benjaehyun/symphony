@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import DiscoveryAPI from '../../services/discovery/discovery-api';
+import { fetchUnreadCount } from './matchesSlice';
 
 export const DISCOVERY_STATUS = {
   IDLE: 'idle',
@@ -38,9 +39,13 @@ export const fetchDiscoveryProfiles = createAsyncThunk(
 
 export const likeProfile = createAsyncThunk(
   'discovery/likeProfile',
-  async (profileId, { rejectWithValue }) => {
+  async (profileId, { dispatch, rejectWithValue }) => {
     try {
       const response = await DiscoveryAPI.likeProfile(profileId);
+
+      if (response.match) {
+        dispatch(fetchUnreadCount());
+      }
       return {
         profileId,
         matchData: response.match ? response.matchedProfile : null

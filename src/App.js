@@ -6,6 +6,7 @@ import { store, persistor } from './store';
 import { LoadingSpinner } from './components/ui/loading-spinner';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from './components/error/ErrorFallback';
+import AppInitializer from './components/app/AppInitializer';
 
 function App() {
   const handleError = (error, info) => {
@@ -25,7 +26,9 @@ function App() {
           }}
         >
           <Router>
-            <Routes />
+            <AppInitializer>
+              <Routes />
+            </AppInitializer>
           </Router>
         </ErrorBoundary>
       </PersistGate>

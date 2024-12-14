@@ -103,19 +103,67 @@ exports.likeProfile = async (req, res) => {
 
     // Add to likes
     userProfile.likes.push(profileId);
-    await userProfile.save();
 
     // Check for mutual like (match)
     const otherProfile = await Profile.findById(profileId);
     if (otherProfile.likes.includes(userProfile._id)) {
-      // Create match
-      userProfile.matches.push(profileId);
-      otherProfile.matches.push(userProfile._id);
+      // Create match objects for both users
+      const currentUserMatch = {
+        matchedProfile: profileId,
+        matchedAt: new Date(),
+        isRead: false,
+        status: 'active'
+      };
+
+      const otherUserMatch = {
+        matchedProfile: userProfile._id,
+        matchedAt: new Date(),
+        isRead: false,
+        status: 'active'
+      };
+      
+
+      userProfile.matches.push(currentUserMatch);
+      otherProfile.matches.push(otherUserMatch);
+
+      const userUnreadCount = userProfile.matches.filter(m => !m.isRead).length;
+      const otherUnreadCount = otherProfile.matches.filter(m => !m.isRead).length;
+
       await Promise.all([userProfile.save(), otherProfile.save()]);
+      
+      // Emit socket events for both users
+      req.io.to(userProfile.user.toString()).emit('match:new', {
+        matchId: currentUserMatch._id,
+        match: {
+          _id: otherProfile._id,
+          name: otherProfile.name,
+          photos: otherProfile.photos,
+          music: {
+            analysis: otherProfile.music.analysis,
+            sourceType: otherProfile.music.sourceType
+          }
+        },
+        unreadCount: userUnreadCount
+      });
+
+      req.io.to(otherProfile.user.toString()).emit('match:new', {
+        matchId: otherUserMatch._id,
+        match: {
+          _id: userProfile._id,
+          name: userProfile.name,
+          photos: userProfile.photos,
+          music: {
+            analysis: userProfile.music.analysis,
+            sourceType: userProfile.music.sourceType
+          }
+        },
+        unreadCount: otherUnreadCount
+      });
       
       // Return match data
       return res.json({ 
         match: true, 
+        matchId: currentUserMatch._id,
         matchedProfile: {
           _id: otherProfile._id,
           name: otherProfile.name,
@@ -128,6 +176,7 @@ exports.likeProfile = async (req, res) => {
       });
     }
 
+    await userProfile.save();
     res.json({ match: false });
   } catch (error) {
     console.error('Like profile error:', error);
