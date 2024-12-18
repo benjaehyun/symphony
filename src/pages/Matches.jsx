@@ -37,9 +37,9 @@ const Matches = () => {
         setSelectedMatch(match);
         if (!match.isRead) {
           dispatch(markMatchesAsRead([match._id]))
-            .then(() => {
-              dispatch(fetchUnreadCount());
-            });
+            // .then(() => {
+            //   dispatch(fetchUnreadCount());
+            // });
         }
       }
     }

@@ -10,6 +10,8 @@ import useMediaQuery from '../hooks/useMediaQuery';
 import { LoadingSpinner } from '../components/ui/loading-spinner';
 import { fetchMatches } from '../store/slices/matchesSlice';
 import { fetchConversationPreviews } from '../store/slices/messagesSlice';
+import { joinRoom, leaveRoom } from '../utils/socket/socket';
+import { generateRoomId } from '../utils/messages/roomID';
 
 const Messages = () => {
   const dispatch = useDispatch()
@@ -17,12 +19,31 @@ const Messages = () => {
   const matches = useSelector(selectMatches);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const loading = useSelector(state => state.messages.loading);
+  const currentProfile = useSelector(state => state.profile.profile);
   
   useEffect(() => {
     // Fetch matches when entering Messages page
     dispatch(fetchMatches({}));
     dispatch(fetchConversationPreviews());
   }, [dispatch]);
+
+  // useEffect(() => {
+  //   if (currentProfile && matches.length > 0) {
+  //     // Join all potential chat rooms
+  //     matches.forEach(match => {
+  //       const roomId = generateRoomId(currentProfile._id, match.matchedProfile._id);
+  //       joinRoom(roomId);
+  //     });
+
+  //     // Cleanup function to leave all rooms
+  //     return () => {
+  //       matches.forEach(match => {
+  //         const roomId = generateRoomId(currentProfile._id, match.matchedProfile._id);
+  //         leaveRoom(roomId);
+  //       });
+  //     };
+  //   }
+  // }, [matches, currentProfile]);
 
   
   // Show empty state if no matches

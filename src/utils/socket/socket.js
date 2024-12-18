@@ -11,14 +11,20 @@ export const initializeSocket = () => {
   }
 
   const { auth } = store.getState();
+  const { profile } = store.getState().profile;
   
-  if (auth.status !== 'authenticated') {
+  if (auth.status !== 'authenticated' || !profile) {
     return null;
   }
 
   socket = io(process.env.REACT_APP_SOCKET_URL, {
     autoConnect: true,
     withCredentials: true
+  });
+
+  socket.on('connect', () => {
+    // Join user-specific room on connect/reconnect
+    socket.emit('user:identify', { userId: profile._id });
   });
 
   socket.on('connect_error', async (error) => {

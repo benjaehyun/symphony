@@ -24,6 +24,11 @@ const setupSocketIO = (io) => {
   io.on('connection', (socket) => {
     console.log('User connected:', socket.userId);
 
+    socket.on('user:identify', ({ userId }) => {
+      // Join user-specific room
+      socket.join(`user:${userId}`);
+    });
+
     // Room management - keep existing
     socket.on('room:join', ({ roomId }) => {
       socket.join(roomId);
@@ -38,6 +43,14 @@ const setupSocketIO = (io) => {
     // Enhanced message handling
     socket.on('message:send', async ({ roomId, content, senderId, clientId }) => {
       try {
+        // Check for existing message with clientId first
+        const existingMessage = await Message.findOne({ clientId });
+        if (existingMessage) {
+          return socket.emit('message:receive', {
+            roomId,
+            message: existingMessage.toJSON()
+          });
+        }
         // Create new message
         const message = await Message.create({
           roomId,
@@ -75,7 +88,7 @@ const setupSocketIO = (io) => {
         console.error('Message save error:', error);
         socket.emit('message:error', { 
           error: 'Failed to send message',
-          clientId // Return clientId for client-side error handling
+          clientId 
         });
       }
     });

@@ -154,3 +154,44 @@ exports.markMessagesAsRead = async (req, res) => {
         });
     }
 };
+
+exports.getUnreadCount = async (req, res) => {
+    try {
+        const userProfile = await Profile.findOne({ user: req.user.id });
+        if (!userProfile) {
+            return res.status(404).json({ message: 'Profile not found' });
+        }
+
+        const roomIds = userProfile.matches
+            .filter(match => match.status === 'active')
+            .map(match => {
+                const participants = [userProfile._id, match.matchedProfile].sort();
+                return participants.join('_');
+            });
+
+        // Count distinct rooms with unread messages
+        const unreadConversations = await Message.aggregate([
+            {
+                $match: {
+                    roomId: { $in: roomIds },
+                    senderId: { $ne: userProfile._id },
+                    status: { $ne: 'read' }
+                }
+            },
+            {
+                $group: {
+                    _id: '$roomId'
+                }
+            }
+        ]);
+
+        res.json({ unreadCount: unreadConversations.length });
+
+    } catch (error) {
+        console.error('Get unread count error:', error);
+        res.status(500).json({ 
+            message: 'Failed to fetch unread count',
+            error: error.message 
+        });
+    }
+};

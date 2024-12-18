@@ -64,6 +64,15 @@ class MessagesAPI {
       throw new Error('An unexpected error occurred');
     }
   }
+
+  static async getUnreadCount() {
+    try {
+      const response = await api.get('/unread-count');
+      return response.data.unreadCount;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
 }
 
 // Reuse the same interceptor pattern from your other APIs

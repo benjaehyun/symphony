@@ -28,12 +28,12 @@ const ChatRoom = ({ matchId }) => {
   
   
   // Join/leave room
-  useEffect(() => {
-    if (roomId) {
-      joinRoom(roomId);
-      return () => leaveRoom(roomId);
-    }
-  }, [roomId]);
+  // useEffect(() => {
+  //   if (roomId) {
+  //     joinRoom(roomId);
+  //     return () => leaveRoom(roomId);
+  //   }
+  // }, [roomId]);
 
   // Initial message load
   useEffect(() => {

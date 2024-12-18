@@ -2,12 +2,14 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Search, Heart, MessageCircle } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import { selectUnreadCount } from '../../store/slices/matchesSlice';
+import { selectUnreadCount as selectUnreadMatchCount } from '../../store/slices/matchesSlice';
+import { selectUnreadCount as selectUnreadMessageCount } from '../../store/slices/messagesSlice';
 import { cn } from '../../utils/cn';
 
 const Sidebar = () => {
   const location = useLocation();
-  const unreadMatchCount = useSelector(selectUnreadCount);
+  const unreadMatchCount = useSelector(selectUnreadMatchCount);
+  const unreadMessageCount = useSelector(selectUnreadMessageCount);
   
   const navigationItems = [
     { name: 'Home', path: '/', icon: Home },
@@ -18,7 +20,12 @@ const Sidebar = () => {
       icon: Heart,
       badge: unreadMatchCount > 0 ? unreadMatchCount : null 
     },
-    { name: 'Messages', path: '/messages', icon: MessageCircle },
+    { 
+      name: 'Messages', 
+      path: '/messages', 
+      icon: MessageCircle,
+      badge: unreadMessageCount > 0 ? unreadMessageCount : null // new
+    }
   ];
 
   const isActivePath = (path) => location.pathname === path;

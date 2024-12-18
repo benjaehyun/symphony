@@ -17,13 +17,9 @@ const messageSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['sent', 'delivered', 'read'],
+    enum: ['sending', 'sent', 'delivered', 'read'],
     default: 'sent'
   },
-  readBy: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Profile'
-  }],
   createdAt: {
     type: Date,
     default: Date.now,

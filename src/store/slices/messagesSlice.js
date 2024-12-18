@@ -31,6 +31,21 @@ export const fetchConversationPreviews = createAsyncThunk(
   }
 );
 
+export const initializeMessageState = createAsyncThunk(
+  'messages/initialize',
+  async (_, { rejectWithValue }) => {
+    try {
+      const [previews, unreadCount] = await Promise.all([
+        MessagesAPI.getConversationPreviews(),
+        MessagesAPI.getUnreadCount()
+      ]);
+      return { previews, unreadCount };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const sendMessage = createAsyncThunk(
   'messages/sendMessage',
   async ({ content, matchId, roomId, senderId }, { getState }) => {
@@ -82,6 +97,7 @@ export const markMessagesAsRead = createAsyncThunk(
 const initialState = {
   messagesByRoom: {},
   conversationPreviews: {},
+  unreadCount: 0,  
   loading: false,
   error: null,
   hasMore: true
@@ -95,6 +111,7 @@ const messagesSlice = createSlice({
       const { message } = action.payload;
       const roomId = message.roomId;
       
+      // Initialize room's message array if it doesn't exist
       if (!state.messagesByRoom[roomId]) {
         state.messagesByRoom[roomId] = [];
       }
@@ -107,7 +124,7 @@ const messagesSlice = createSlice({
              m.senderId === message.senderId &&
              new Date(m.createdAt).getTime() >= new Date(message.createdAt).getTime() - 5000)
       );
-
+    
       if (tempMessageIndex !== -1) {
         state.messagesByRoom[roomId][tempMessageIndex] = message;
       } else {
@@ -116,11 +133,32 @@ const messagesSlice = createSlice({
         );
         if (!isDuplicate) {
           state.messagesByRoom[roomId].push(message);
+          
+          // // Update conversation preview
+          // const prevPreview = state.conversationPreviews[roomId];
+          // state.conversationPreviews[roomId] = message;
+          
+          // // Update unread count if this is a new unread message
+          // const hasUnreadMessages = state.messagesByRoom[roomId].some(
+          //   m => m.status !== 'read' && m._id !== message._id // Exclude current message
+          // );
+          
+          // if (!hasUnreadMessages && message.status !== 'read') {
+          //   state.unreadCount++;
+          // }
+
+          const prevLatestMessage = state.conversationPreviews[roomId];
+          const wasConversationRead = !prevLatestMessage || prevLatestMessage.status === 'read';
+          
+          // Update conversation preview
+          state.conversationPreviews[roomId] = message;
+          
+          // Increment unread count if conversation was previously read and new message is unread
+          if (wasConversationRead && message.status !== 'read') {
+            state.unreadCount++;
+          }
         }
       }
-
-      // Update conversation preview
-      state.conversationPreviews[roomId] = message;
     },
 
     handleMessageDelivered: (state, action) => {
@@ -136,12 +174,29 @@ const messagesSlice = createSlice({
       const { roomId, messageIds, readAt } = action.payload;
       const messages = state.messagesByRoom[roomId];
       if (messages) {
+        let wasUnreadConversation = false;
+        
+        // Check if this conversation was unread before updating
+        wasUnreadConversation = messages.some(
+          message => message.status !== 'read' && message.senderId !== state.currentProfile?._id
+        );
+
+        // Update message statuses
         messages.forEach(message => {
           if (messageIds.includes(message._id)) {
             message.status = 'read';
             message.readAt = readAt;
           }
         });
+
+        // If conversation was unread and now all messages are read, decrement count
+        const isStillUnread = messages.some(
+          message => message.status !== 'read' && message.senderId !== state.currentProfile?._id
+        );
+
+        if (wasUnreadConversation && !isStillUnread) {
+          state.unreadCount = Math.max(0, state.unreadCount - 1);
+        }
       }
     },
 
@@ -208,8 +263,23 @@ const messagesSlice = createSlice({
         if (preview && messageIds.includes(preview._id)) {
           preview.status = 'read';
           preview.readAt = new Date().toISOString();
+          // Decrement unread count if this was an unread conversation
+          state.unreadCount = Math.max(0, state.unreadCount - 1);
         }
-      });
+      })
+
+      // Initialize message slice on app load
+      .addCase(initializeMessageState.fulfilled, (state, action) => {
+        const { previews, unreadCount } = action.payload;
+        
+        // Reset and update conversation previews
+        state.conversationPreviews = {};
+        previews.forEach(preview => {
+          state.conversationPreviews[preview._id] = preview.lastMessage;
+        });
+        
+        state.unreadCount = unreadCount;
+      })
   }
 });
 
@@ -226,5 +296,6 @@ export const selectMessagesLoading = (state) => state.messages.loading;
 export const selectHasMore = (state) => state.messages.hasMore;
 export const selectConversationPreview = (state, roomId) => 
   state.messages.conversationPreviews[roomId];
+export const selectUnreadCount = (state) => state.messages.unreadCount;
 
 export default messagesSlice.reducer;

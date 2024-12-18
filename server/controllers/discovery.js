@@ -1,5 +1,6 @@
 const Profile = require('../models/profile');
 const { calculateCompatibilityScore } = require('../utils/matchingAlgorithm');
+const { generateRoomId } = require('../utils/roomID');
 
 exports.getDiscoveryProfiles = async (req, res) => {
     try {
@@ -130,33 +131,48 @@ exports.likeProfile = async (req, res) => {
       const otherUnreadCount = otherProfile.matches.filter(m => !m.isRead).length;
 
       await Promise.all([userProfile.save(), otherProfile.save()]);
-      
+
+      const roomId = generateRoomId(userProfile._id, otherProfile._id);
       // Emit socket events for both users
-      req.io.to(userProfile.user.toString()).emit('match:new', {
-        matchId: currentUserMatch._id,
-        match: {
-          _id: otherProfile._id,
-          name: otherProfile.name,
-          photos: otherProfile.photos,
-          music: {
-            analysis: otherProfile.music.analysis,
-            sourceType: otherProfile.music.sourceType
-          }
-        },
+      // req.io.to(userProfile.user.toString()).emit('match:new', {
+      //   matchId: currentUserMatch._id,
+      //   match: {
+      //     _id: otherProfile._id,
+      //     name: otherProfile.name,
+      //     photos: otherProfile.photos,
+      //     music: {
+      //       analysis: otherProfile.music.analysis,
+      //       sourceType: otherProfile.music.sourceType
+      //     }
+      //   },
+      //   unreadCount: userUnreadCount
+      // });
+
+      // req.io.to(otherProfile.user.toString()).emit('match:new', {
+      //   matchId: otherUserMatch._id,
+      //   match: {
+      //     _id: userProfile._id,
+      //     name: userProfile.name,
+      //     photos: userProfile.photos,
+      //     music: {
+      //       analysis: userProfile.music.analysis,
+      //       sourceType: userProfile.music.sourceType
+      //     }
+      //   },
+      //   unreadCount: otherUnreadCount
+      // });
+
+      req.io.to(`user:${userProfile._id}`).emit('match:new', {
+        // match: currentUserMatch,
+        match: userProfile,
+        roomId,
         unreadCount: userUnreadCount
       });
 
-      req.io.to(otherProfile.user.toString()).emit('match:new', {
-        matchId: otherUserMatch._id,
-        match: {
-          _id: userProfile._id,
-          name: userProfile.name,
-          photos: userProfile.photos,
-          music: {
-            analysis: userProfile.music.analysis,
-            sourceType: userProfile.music.sourceType
-          }
-        },
+      req.io.to(`user:${otherProfile._id}`).emit('match:new', {
+        // match: otherUserMatch,
+        match: otherProfile,
+        roomId,
         unreadCount: otherUnreadCount
       });
       

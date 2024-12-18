@@ -75,11 +75,11 @@ exports.markMatchesAsRead = async (req, res) => {
 
     const unreadCount = userProfile.matches.filter(match => !match.isRead).length;
 
-    // socket event for read status update
-    req.io.to(req.user.id).emit('match:read', { 
-      matchIds,
-      unreadCount 
-    });
+    // // socket event for read status update
+    // req.io.to(req.user.id).emit('match:read', { 
+    //   matchIds,
+    //   unreadCount 
+    // });
 
     res.json({ success: true });
   } catch (error) {
