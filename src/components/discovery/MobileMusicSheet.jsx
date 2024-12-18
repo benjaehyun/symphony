@@ -51,7 +51,16 @@ const MobileMusicSheet = ({ profile, isOpen, onOpenChange }) => {
                     <h3 className="font-semibold">Music Match</h3>
                   </div>
                   <div className="text-3xl font-bold text-spotify-green">
-                    {Math.round(profile.compatibilityScore * 100)}%
+                    {Math.round(profile.compatibilityScore.total * 100)}%
+                  </div>
+                  <div className="text-m font-bold text-spotify-green">
+                    Music Dimensions: {Math.round(profile.compatibilityScore.subscores.dimensions * 100)}%
+                  </div>
+                  <div className="text-m font-bold text-spotify-green">
+                    Music Features: {Math.round(profile.compatibilityScore.subscores.features * 100)}%
+                  </div>
+                  <div className="text-m font-bold text-spotify-green">
+                    Music Genres: {Math.round(profile.compatibilityScore.subscores.genres * 100)}%
                   </div>
                 </div>
 

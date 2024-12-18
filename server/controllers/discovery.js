@@ -32,7 +32,7 @@ exports.getDiscoveryProfiles = async (req, res) => {
             gender: { $in: userProfile.preferences.genderPreference }
         };
     
-        // Add cursor-based pagination if lastId is provided
+        // Add cursor-based pagination w lastId, if necessary
         if (req.query.lastId) {
             query._id = { 
             ...query._id,
@@ -43,11 +43,11 @@ exports.getDiscoveryProfiles = async (req, res) => {
         // Get batch of potential matches
         const batchSize = 10;
         let profiles = await Profile.find(query)
-            .select('-music.tracks') // Exclude full track data for performance
+            .select('-music.tracks') // Exclude full track data for efficiency
             .sort({ _id: -1 }) // Ensure consistent ordering for pagination
             .limit(batchSize);
     
-        // If no profiles found, return specific response
+        // If no profiles found, return 
         if (!profiles.length) {
             return res.json({
             profiles: [],
@@ -127,10 +127,15 @@ exports.likeProfile = async (req, res) => {
       userProfile.matches.push(currentUserMatch);
       otherProfile.matches.push(otherUserMatch);
 
+      await Promise.all([userProfile.save(), otherProfile.save()]);
+
+      const savedCurrentUserMatch = userProfile.matches[userProfile.matches.length - 1];
+      console.log('currentusermatch', savedCurrentUserMatch._id)
+      const savedOtherUserMatch = otherProfile.matches[otherProfile.matches.length - 1];
+      console.log('otherusermatch', savedOtherUserMatch._id)
+
       const userUnreadCount = userProfile.matches.filter(m => !m.isRead).length;
       const otherUnreadCount = otherProfile.matches.filter(m => !m.isRead).length;
-
-      await Promise.all([userProfile.save(), otherProfile.save()]);
 
       const roomId = generateRoomId(userProfile._id, otherProfile._id);
       // Emit socket events for both users
@@ -162,16 +167,49 @@ exports.likeProfile = async (req, res) => {
       //   unreadCount: otherUnreadCount
       // });
 
+      // req.io.to(`user:${userProfile._id}`).emit('match:new', {
+      //   // match: currentUserMatch,
+      //   match: userProfile,
+      //   roomId,
+      //   unreadCount: userUnreadCount
+      // });
+
+      // req.io.to(`user:${otherProfile._id}`).emit('match:new', {
+      //   // match: otherUserMatch,
+      //   match: otherProfile,
+      //   roomId,
+      //   unreadCount: otherUnreadCount
+      // });
       req.io.to(`user:${userProfile._id}`).emit('match:new', {
-        // match: currentUserMatch,
-        match: userProfile,
+        matchId: savedCurrentUserMatch._id, 
+        match: {
+          _id: otherProfile._id,
+          name: otherProfile.name,
+          photos: otherProfile.photos,
+          music: {
+            analysis: otherProfile.music.analysis,
+            sourceType: otherProfile.music.sourceType
+          },
+          age: otherProfile.age,
+          bio: otherProfile.bio
+        },
         roomId,
         unreadCount: userUnreadCount
       });
 
       req.io.to(`user:${otherProfile._id}`).emit('match:new', {
-        // match: otherUserMatch,
-        match: otherProfile,
+        matchId: savedOtherUserMatch._id, 
+        match: {
+          _id: userProfile._id,
+          name: userProfile.name,
+          photos: userProfile.photos,
+          music: {
+            analysis: userProfile.music.analysis,
+            sourceType: userProfile.music.sourceType
+          },
+          age: userProfile.age,
+          bio: userProfile.bio
+        },
         roomId,
         unreadCount: otherUnreadCount
       });
@@ -179,7 +217,7 @@ exports.likeProfile = async (req, res) => {
       // Return match data
       return res.json({ 
         match: true, 
-        matchId: currentUserMatch._id,
+        matchId: savedCurrentUserMatch._id,
         matchedProfile: {
           _id: otherProfile._id,
           name: otherProfile.name,

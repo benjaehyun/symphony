@@ -14,11 +14,12 @@ import { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
 import { LoadingSpinner } from '../components/ui/loading-spinner';
 import { Music2, MessageCircle } from 'lucide-react';
 import useMediaQuery from '../hooks/useMediaQuery';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const Matches = () => {
   const { matchId } = useParams();
   const dispatch = useDispatch();
+  const navigate = useNavigate()
   const matches = useSelector(selectMatches);
   const isLoading = useSelector(selectMatchesLoading);
   const hasMore = useSelector(selectHasMoreMatches);
@@ -128,7 +129,7 @@ const Matches = () => {
                               hover:scale-105 transition-transform"
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Navigate to messages
+                      navigate(`/messages/${match._id}`);
                     }}
                   >
                     <MessageCircle className="h-6 w-6" />

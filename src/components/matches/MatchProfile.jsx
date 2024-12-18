@@ -21,7 +21,7 @@ const MatchProfile = ({ match, onClose, onUnmatch }) => {
 
   const handleMessage = () => {
     navigate(`/messages/${match._id}`);
-    onClose();
+    // onClose();
   };
 
   return (

@@ -7,15 +7,18 @@ import { Card, CardContent } from '../ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { MessageCircle, X, Music2 } from 'lucide-react';
 import useMediaQuery from '../../hooks/useMediaQuery';
+import { selectProfile } from '../../store/slices/profileSlice';
+import { useSelector } from 'react-redux';
 
 const MatchContent = ({ match, onClose, onMessage }) => {
   const navigate = useNavigate();
+  const profile = useSelector(selectProfile)
 
   const handleViewProfile = () => {
     navigate(`/matches/${match._id}`);
     onClose();
   };
-
+  
   return (
     <Card className="bg-background border-0 shadow-none">
       <CardContent className="p-6 flex flex-col items-center">
@@ -43,7 +46,7 @@ const MatchContent = ({ match, onClose, onMessage }) => {
         <div className="flex items-center justify-center gap-6 mb-8">
           <div className="relative">
             <Avatar className="w-24 h-24 border-4 border-background-elevated">
-              <AvatarImage src={match?.photos?.[0]?.url} alt="Your profile" />
+              <AvatarImage src={profile?.photos?.[0]?.url} alt="Your profile" />
               <AvatarFallback>You</AvatarFallback>
             </Avatar>
             <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-background-elevated 
@@ -105,7 +108,7 @@ const MatchNotification = ({ isOpen, onClose, match }) => {
   const navigate = useNavigate();
 
   const handleMessage = () => {
-    navigate(`/messages/${match._id}`);
+    navigate(`/messages/${match.matchId}`);
     onClose();
   };
 

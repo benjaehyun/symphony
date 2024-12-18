@@ -43,12 +43,12 @@ export const likeProfile = createAsyncThunk(
     try {
       const response = await DiscoveryAPI.likeProfile(profileId);
 
-      if (response.match) {
-        dispatch(fetchUnreadCount());
-      }
+      // if (response.match) {
+      //   dispatch(fetchUnreadCount());
+      // }
       return {
         profileId,
-        matchData: response.match ? response.matchedProfile : null
+        matchData: response.match ? {...response.matchedProfile, matchId: response.matchId} : null
       };
     } catch (error) {
       return rejectWithValue(error.message);

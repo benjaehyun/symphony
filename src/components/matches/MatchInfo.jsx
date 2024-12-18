@@ -19,7 +19,7 @@ const MatchInfo = ({ match, onClose, onUnmatch, showTopBar = true }) => {
 
   const handleMessage = () => {
     navigate(`/messages/${match._id}`);
-    onClose();
+    // onClose();
   };
 
   return (
