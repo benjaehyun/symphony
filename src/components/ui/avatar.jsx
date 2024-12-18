@@ -16,7 +16,7 @@ Avatar.displayName = "Avatar"
 const AvatarImage = React.forwardRef(({ className, ...props }, ref) => (
   <img
     ref={ref}
-    className={cn("aspect-square h-full w-full", className)}
+    className={cn("absolute inset-0 h-full w-full object-cover z-10", className)}
     {...props}
   />
 ))
@@ -26,7 +26,7 @@ const AvatarFallback = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "flex h-full w-full items-center justify-center rounded-full bg-background-muted",
+      "absolute inset-0 flex h-full w-full items-center justify-center rounded-full bg-background-muted z-0",
       className
     )}
     {...props}

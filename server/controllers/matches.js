@@ -9,7 +9,7 @@ exports.getMatches = async (req, res) => {
     const userProfile = await Profile.findOne({ user: req.user.id })
       .populate({
         path: 'matches.matchedProfile',
-        select: 'name photos music.analysis age bio'
+        select: 'name photos music.analysis music.sourceType age bio'
       })
       .select('matches');
 
