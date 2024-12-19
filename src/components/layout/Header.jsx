@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, ChevronDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import UserMenu from './UserMenu';
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -38,10 +39,11 @@ const Header = () => {
           <button className="p-2 text-muted-foreground hover:text-primary">
             <Bell className="w-5 h-5" />
           </button>
-          <button className="flex items-center space-x-2 py-1 px-2 rounded-full bg-background/60">
+          {/* <button className="flex items-center space-x-2 py-1 px-2 rounded-full bg-background/60">
             <div className="w-7 h-7 rounded-full bg-background-highlight" />
             <ChevronDown className="w-4 h-4" />
-          </button>
+          </button> */}
+          <UserMenu />
         </div>
       </div>
     </header>

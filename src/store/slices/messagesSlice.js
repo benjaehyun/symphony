@@ -200,10 +200,11 @@ const messagesSlice = createSlice({
       }
     },
 
-    clearMessages: (state, action) => {
-      const { roomId } = action.payload;
-      delete state.messagesByRoom[roomId];
-    }
+    // clearMessages: (state, action) => {
+    //   const { roomId } = action.payload;
+    //   delete state.messagesByRoom[roomId];
+    // }
+    clearMessages: () => initialState
   },
   extraReducers: (builder) => {
     builder

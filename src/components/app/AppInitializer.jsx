@@ -5,9 +5,9 @@ import axios from 'axios';
 import { logout } from '../../store/slices/authSlice';
 import { fetchUserProfile } from '../../store/slices/profileSlice';
 import { fetchMatches } from '../../store/slices/matchesSlice';
+import { initializeMessageState } from '../../store/slices/messagesSlice';
 import { initializeSocket } from '../../utils/socket/socket';
 import { LoadingSpinner } from '../ui/loading-spinner';
-import { initializeMessageState } from '../../store/slices/messagesSlice';
 
 const AppInitializer = ({ children }) => {
   const dispatch = useDispatch();
@@ -32,6 +32,7 @@ const AppInitializer = ({ children }) => {
         return;
       }
 
+      // Skip if already initialized or in auth flow
       if (hasInitialized.current || isAuthFlow) {
         setIsInitialized(true);
         return;
@@ -39,6 +40,7 @@ const AppInitializer = ({ children }) => {
 
       if (authStatus === 'authenticated') {
         try {
+          // 1. Refresh token
           try {
             await axios.post(
               `${process.env.REACT_APP_API_URL || '/api'}/auth/refresh`,
@@ -56,16 +58,16 @@ const AppInitializer = ({ children }) => {
             await dispatch(fetchUserProfile()).unwrap();
           }
 
-          const [matchesResult, messageStateResult] = await Promise.all([
+          // 3. Initialize app state
+          await Promise.all([
             dispatch(fetchMatches({})).unwrap(),
             dispatch(initializeMessageState()).unwrap()
           ]);
                     
-          // 3. Initialize socket and set up message handlers
+          // 4. Initialize socket and set up message handlers
           const socket = await initializeSocket();
           if (socket) {
             dispatch({ type: 'socket/initialize' });
-            // dispatch({ type: 'socket/manageRooms' });
           } else {
             console.error('Socket initialization failed');
           }
@@ -94,10 +96,27 @@ const AppInitializer = ({ children }) => {
 
     initializeApp();
 
+    // Cleanup function
     return () => {
       mounted = false;
     };
-  }, [authStatus, isAuthFlow]);
+  }, [authStatus, isAuthFlow, dispatch, profileStatus]);
+
+  // Handle auth status changes
+  useEffect(() => {
+    if (authStatus !== 'authenticated' && hasInitialized.current) {
+      hasInitialized.current = false;
+      setIsInitialized(false);
+    }
+  }, [authStatus]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      hasInitialized.current = false;
+      setIsInitialized(false);
+    };
+  }, []);
 
   if (!isInitialized && !isAuthFlow) {
     return (

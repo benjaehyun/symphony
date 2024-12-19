@@ -3,7 +3,7 @@ import {
   handleMessageDelivered, 
   handleMessagesRead 
 } from '../../store/slices/messagesSlice';
-import { getSocket } from './socket';
+import { getSocket, disconnectSocket } from './socket';
 import { selectMatches } from '../../store/slices/matchesSlice';
 import { getRoomConnectionStatus } from './getRoomConnectionStatus';
 import { joinRoom, leaveRoom } from './socket';
@@ -37,11 +37,11 @@ const createSocketMiddleware = () => {
         socket.on('match:new', (data) => {
           const { match, roomId, unreadCount } = data;
           
-          // Join the new chat room
+          // Join the new chat
           joinRoom(roomId);
           activeRooms.add(roomId);
           
-          // Update matches state
+          // Update match state
           store.dispatch(handleNewMatch({
             match: match,
             matchId: match._id,
@@ -93,21 +93,41 @@ const createSocketMiddleware = () => {
       }
 
 
-      case 'auth/logout': {
+      case 'socket/cleanup': {
         const socket = getSocket();
         if (socket) {
-          // Clear all room connections
+          // Get current state for user info
+          const state = store.getState();
+          const currentProfile = state.profile.profile;
+          
+          // Cancel any pending emit operations
+          socket.sendBuffer = [];
+          
+          // Leave user-specific room
+          if (currentProfile?._id) {
+            socket.emit('room:leave', { roomId: `user:${currentProfile._id}` });
+          }
+      
+          // Leave all active match/chat rooms
           activeRooms.forEach(roomId => {
             leaveRoom(roomId);
           });
           activeRooms.clear();
-
+      
+          // Remove all socket event listeners
+          socket.off('match:new');
+          socket.off('match:unmatch');
           socket.off('message:receive');
           socket.off('message:delivered');
           socket.off('message:read_status');
           socket.off('message:error');
-          socket.off('match:new');
-          socket.off('match:unmatch');
+      
+          // Remove any custom socket properties
+          delete socket.userId;
+          delete socket.rooms;
+      
+          // Disconnect and clean up socket
+          disconnectSocket();
         }
         break;
       }

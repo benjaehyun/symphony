@@ -131,8 +131,22 @@ exports.login = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
-  res.clearCookie('accessToken');
-  res.clearCookie('refreshToken');
+  // Clear access token with same options used when setting
+  res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/'
+  });
+
+  // Clear refresh token with same options used when setting
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/'
+  });
+
   res.json({ message: 'Logged out successfully' });
 };
 

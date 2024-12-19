@@ -50,7 +50,8 @@ export const getSocket = () => socket;
 export const disconnectSocket = () => {
   if (socket) {
     socket.disconnect();
-    socket = null;
+    socket.removeAllListeners();  // Remove any remaining listeners
+    socket = null;  // Clear the socket instance
   }
 };
 

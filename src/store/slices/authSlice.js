@@ -3,7 +3,11 @@ import AuthAPI from '../../services/auth/auth-api';
 import { SpotifyAuthService } from '../../services/spotify/SpotifyAuthService';
 import { SpotifyTokenManager } from '../../services/spotify/SpotifyTokenManager';
 import { AUTH_STATUS, SPOTIFY_AUTH_STATUS } from '../../utils/constants';
-import { fetchUserProfile } from './profileSlice';
+// import { fetchUserProfile } from './profileSlice';
+import { resetProfile } from './profileSlice';
+import { resetDiscovery } from './discoverySlice';
+import { resetMatches } from './matchesSlice';
+import { clearMessages } from './messagesSlice';
 
 const authService = new SpotifyAuthService();
 const tokenManager = new SpotifyTokenManager(authService);
@@ -97,6 +101,39 @@ export const handleAuthSuccess = createAsyncThunk(
   }
 );
 
+export const logoutUser = createAsyncThunk(
+  'auth/logoutUser',
+  async (_, { dispatch, getState }) => {
+    try {
+      const localStorageKeysToRemove = [
+        'spotify_auth_state',
+        'spotify_code_verifier',
+        // Add any other app-specific keys
+      ];
+      
+      localStorageKeysToRemove.forEach(key => localStorage.removeItem(key));
+
+      // Call backend logout endpoint
+      await AuthAPI.logout();
+      
+      // Socket cleanup
+      dispatch({ type: 'socket/cleanup' });
+      
+      // Clear all Redux state
+      dispatch(resetAuth());
+      dispatch(resetProfile());
+      dispatch(resetDiscovery());
+      dispatch(resetMatches());
+      dispatch(clearMessages());
+      
+      return true;
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  }
+);
+
 const initialState = {
   status: AUTH_STATUS.IDLE,
   error: null,
@@ -129,9 +166,7 @@ const authSlice = createSlice({
     clearAuthError: (state) => {
       state.error = null;
     },
-    logout: (state) => {
-      return initialState;
-    }
+    logout: () => initialState
   },
   extraReducers: (builder) => {
     builder
@@ -204,8 +239,20 @@ const authSlice = createSlice({
           state.spotify.status = SPOTIFY_AUTH_STATUS.CONNECTED;
           state.spotify.isConnected = action.payload.spotifyConnected;
         }
+      })
+
+      .addCase(logoutUser.pending, (state) => {
+        state.status = AUTH_STATUS.LOADING;
+        state.error = null;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        return initialState;
+      })
+      .addCase(logoutUser.rejected, (state, action) => {
+        state.status = AUTH_STATUS.FAILED;
+        state.error = action.error.message;
       });
-  }
+    }
 });
 
 export const {
