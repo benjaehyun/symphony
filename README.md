@@ -1,70 +1,228 @@
-# Getting Started with Create React App
+# Symphony: Music-Based Dating Application
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
+Symphony is an innovative Progressive Web Application (PWA) that revolutionizes online dating by creating meaningful connections through musical compatibility. By leveraging deep Spotify integration and sophisticated musical analysis algorithms, Symphony matches users based on their musical preferences, listening patterns, and shared musical dimensions.
 
-## Available Scripts
+## Technical Stack
 
-In the project directory, you can run:
+### Frontend
+- React.js 18.2.0 with modern hooks and patterns
+- Redux Toolkit for state management with Redux Persist
+- TailwindCSS with custom Spotify-inspired theme
+- shadcn/ui component library
+- Socket.IO client for real-time features
+- Progressive Web App capabilities with Service Workers
 
-### `npm start`
+### Backend
+- Node.js with Express.js
+- MongoDB with Mongoose ODM
+- Socket.IO for real-time communication
+- JWT and Spotify OAuth2 authentication
+- AWS S3 for media storage
+- Redis for caching
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Core Features
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Music Analysis & Matching Algorithm
+Symphony implements a sophisticated music analysis system based on Rentfrow's MUSIC model dimensions, incorporating detailed audio feature analysis and multi-dimensional compatibility scoring.
 
-### `npm test`
+#### Musical Dimensions Analysis
+- **Mellow** (Romantic and relaxing music)
+  - High acousticness (0.8) and instrumentalness (0.6)
+  - Negative correlation with energy (-0.7)
+  - Moderate valence (0.3)
+  - Common genres: jazz, classical, folk, ambient
+  
+- **Unpretentious** (Sincere and conventional music)
+  - Moderate acousticness (0.6)
+  - Negative complexity correlation (-0.7)
+  - Moderate energy (0.4)
+  - Common genres: country, pop, folk, rock
+  
+- **Sophisticated** (Complex and creative music)
+  - High instrumentalness (0.8)
+  - High complexity correlation (0.7)
+  - Moderate acousticness (0.5)
+  - Common genres: classical, jazz, avant-garde, world
+  
+- **Intense** (Forceful and energetic music)
+  - High energy correlation (0.9)
+  - Negative valence correlation (-0.4)
+  - Negative acousticness (-0.7)
+  - Common genres: rock, metal, punk, electronic
+  
+- **Contemporary** (Rhythmic and popular music)
+  - High danceability (0.8)
+  - Strong energy presence (0.6)
+  - Positive valence (0.5)
+  - Common genres: pop, rap, electronic, r&b
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+#### Multi-dimensional Scoring System
+The matching algorithm employs a sophisticated three-component analysis:
 
-### `npm run build`
+1. **MUSIC Dimensions Similarity (40%)**
+   - Cosine similarity calculation between users' dimension profiles
+   - Dimension-specific feature weights:
+     - Mellow: High acousticness (0.8), negative energy (-0.7), moderate valence (0.3)
+     - Unpretentious: High danceability (0.7), strong valence (0.6)
+     - Sophisticated: High instrumentalness (0.8), high acousticness (0.6)
+     - Intense: Very high energy (0.9), negative valence (-0.4)
+     - Contemporary: High danceability (0.8), positive energy (0.6)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+2. **Audio Features Similarity (30%)**
+   - Euclidean distance calculation for key audio features:
+     - Danceability
+     - Energy
+     - Valence
+     - Acousticness
+     - Instrumentalness
+   - Normalized similarity score (1 - normalized distance)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+3. **Genre Distribution Similarity (30%)**
+   - Frequency-based genre distribution analysis
+   - Track-level genre aggregation from artists
+   - Minimum frequency overlap calculation
+   - Normalized genre similarity scoring
+   - Handles multi-genre artists effectively
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+#### Feature Normalization
+Spotify audio features are normalized within specific ranges:
+```javascript
+const FEATURE_RANGES = {
+    acousticness: { min: 0, max: 1 },
+    danceability: { min: 0, max: 1 },
+    energy: { min: 0, max: 1 },
+    instrumentalness: { min: 0, max: 1 },
+    valence: { min: 0, max: 1 },
+    tempo: { min: 0, max: 250 },
+    loudness: { min: -60, max: 0 }
+};
+```
 
-### `npm run eject`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Authentication System
+- Multi-layer authentication combining JWT and Spotify OAuth2
+- Secure token management with automatic refresh
+- HTTP-only cookies for enhanced security
+- Protected route system with role-based access
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Profile Management
+#### Multi-step Profile Creation
+1. Basic Information Collection
+2. Photo Management & Upload
+3. Music Taste Analysis
+4. Preference Configuration
+5. Profile Review & Completion
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+#### Photo Upload Management
+- Client-side image processing and validation
+- Automatic image cropping with aspect ratio enforcement
+- Drag-and-drop photo reordering
+- AWS S3 integration for secure storage
+- Progress tracking and optimization
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Real-time Communication System
 
-## Learn More
+#### Message Delivery Architecture
+- Bidirectional real-time communication using Socket.IO
+- Room-based message routing for private conversations
+- Message deduplication using clientId system
+- Optimistic updates for instant UI feedback
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+#### Message State Management
+- Message status tracking (sending → sent → delivered → read)
+- Real-time delivery confirmations
+- Batch read status updates
+- Conversation-based unread counting
+- Persistent message storage in MongoDB
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+#### Conversation Management
+- Real-time conversation previews with latest message prioritization
+- Efficient room connection management at application initialization
+- Unread message indicators with MongoDB aggregation
+- User-specific socket rooms for targeted notifications
+- Automatic chat room creation for new matches
 
-### Code Splitting
+#### Message Loading
+- Cursor-based pagination for message history
+- Efficient MongoDB queries with compound indexing
+- Optimized preview fetching using aggregation
+- Message ordering preservation
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Discovery Interface
+- Gesture-based swipe interface using Framer Motion
+- Advanced profile card stack implementation
+- Efficient profile caching and prefetching
+- Responsive design adapting to device size
+- Touch-optimized controls for mobile
 
-### Analyzing the Bundle Size
+## Technical Implementation Details
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### State Management Architecture
 
-### Making a Progressive Web App
+#### Redux Implementation
+- Feature-based Redux slice organization
+- Normalized state structure for efficient data access
+- Socket middleware for real-time event handling
+- Cross-tab state persistence with Redux Persist
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+#### Message State Handling
+- Centralized Redux store with socket middleware
+- Temporary message handling with deduplication
+- Real-time status updates via Socket.IO
 
-### Advanced Configuration
+#### Database Optimization
+- Optimized MongoDB schema with compound indexing
+- Efficient aggregation pipelines for unread counts
+- Message status tracking with timestamp management
+- Room-based message organization
+- Proper cleanup protocols
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
 
-### Deployment
+### API Integration
+- Sophisticated Spotify API integration with rate limiting
+- Batch processing for API calls
+- Comprehensive error handling
+- Automatic retry mechanism
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Security Features
+- CSRF protection
+- XSS prevention
+- Secure file upload validation
 
-### `npm run build` fails to minify
+### Performance Optimizations
+- Lazy loading implementation
+- Image optimization pipeline
+- Efficient caching strategies
+- Bundle size optimization
+- Database query optimization
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Getting Started
+
+### Prerequisites
+- Node.js >= 18.x
+- MongoDB >= 5.x
+- Spotify Developer Account
+- AWS Account for S3
+- NPM 
+
+### Installation
+```bash
+# Clone repository
+git clone [https://github.com/benjaehyun/symphony]
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+
+# Start development server
+npm run dev
+```
+
+
+
+---
+
+Developed by Benjamin Lee
