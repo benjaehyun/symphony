@@ -250,8 +250,8 @@ const FEATURE_RANGES = {
 ## Getting Started
 
 ### Prerequisites
-- Node.js >= 18.x
-- MongoDB >= 5.x
+- Node.js 
+- MongoDB 
 - Spotify Developer Account
 - AWS Account for S3
 - NPM 
