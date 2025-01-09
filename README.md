@@ -21,7 +21,7 @@ Symphony is an innovative Progressive Web Application (PWA) that revolutionizes 
 ## Core Features
 
 ### Music Analysis & Matching Algorithm
-Symphony implements a sophisticated music analysis system based on Rentfrow's MUSIC model dimensions [which could be found here](https://pmc.ncbi.nlm.nih.gov/articles/PMC3138530/), incorporating detailed audio feature analysis and multi-dimensional compatibility scoring.
+Symphony implements a sophisticated music analysis system based on Rentfrow's MUSIC model dimensions [which can be found here](https://pmc.ncbi.nlm.nih.gov/articles/PMC3138530/), incorporating detailed audio feature analysis and multi-dimensional compatibility scoring.
 
 #### Musical Dimensions Analysis
 - **Mellow** (Romantic and relaxing music)
