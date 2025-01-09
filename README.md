@@ -26,7 +26,7 @@ Symphony implements a sophisticated music analysis system based on Rentfrow's MU
 #### Musical Dimensions Analysis
 The system analyzes five key musical dimensions, each characterized by specific audio feature weights:
 
-- **Mellow** (Romantic and relaxing music)
+**Mellow** (Romantic and relaxing music)
 - High acousticness (0.8)
 - Negative correlation with energy (-0.7)
 - Moderate valence (0.3)
@@ -34,27 +34,27 @@ The system analyzes five key musical dimensions, each characterized by specific 
 - Slight negative correlation with danceability (-0.2)
 - Common genres: jazz, classical, folk, ambient
 
-- **Unpretentious** (Sincere and conventional music)
+**Unpretentious** (Sincere and conventional music)
 - High danceability (0.7)
 - Strong valence correlation (0.6)
 - Moderate acousticness (0.4)
 - Moderate energy correlation (0.3)
 - Common genres: country, pop, folk, rock
 
-- **Sophisticated** (Complex and creative music)
+**Sophisticated** (Complex and creative music)
 - High instrumentalness (0.8)
 - Strong acousticness (0.6)
 - Moderate negative correlation with danceability (-0.3)
 - Common genres: classical, jazz, avant-garde, world
 
-- **Intense** (Forceful and energetic music)
+**Intense** (Forceful and energetic music)
 - Very high energy correlation (0.9)
 - Negative valence correlation (-0.4)
 - Strong negative correlation with acousticness (-0.7)
 - Moderate positive correlation with danceability (0.3)
 - Common genres: rock, metal, punk, electronic
 
-- **Contemporary** (Rhythmic and popular music)
+**Contemporary** (Rhythmic and popular music)
 - High danceability (0.8)
 - Strong energy presence (0.6)
 - Positive valence (0.5)
