@@ -1,5 +1,4 @@
-# Symphony: Music-Based Dating Application
-
+# Symphony: Music-Based Dating App
 ## Overview
 Symphony is an innovative Progressive Web Application (PWA) that revolutionizes online dating by creating meaningful connections through musical compatibility. By leveraging deep Spotify integration and sophisticated musical analysis algorithms, Symphony matches users based on their musical preferences, listening patterns, and shared musical dimensions.
 
