@@ -20,15 +20,13 @@ Symphony is an innovative Progressive Web Application (PWA) that revolutionizes 
 
 ## Core Features
 
-# Symphony Music Analysis & Matching Algorithm
+### Music Analysis & Matching Algorithm
+Symphony implements a sophisticated music analysis system based on Rentfrow's MUSIC model dimensions [which can be found here](https://pmc.ncbi.nlm.nih.gov/articles/PMC3138530/), incorporating detailed audio feature analysis and multi-dimensional compatibility scoring.
 
-Symphony implements a sophisticated music analysis system based on Rentfrow's MUSIC model dimensions, incorporating multi-dimensional audio feature analysis, genre distribution analysis, and robust error handling for comprehensive compatibility scoring.
-
-## Musical Dimensions Analysis
-
+#### Musical Dimensions Analysis
 The system analyzes five key musical dimensions, each characterized by specific audio feature weights:
 
-### Mellow (Romantic and relaxing music)
+- **Mellow** (Romantic and relaxing music)
 - High acousticness (0.8)
 - Negative correlation with energy (-0.7)
 - Moderate valence (0.3)
@@ -36,45 +34,44 @@ The system analyzes five key musical dimensions, each characterized by specific 
 - Slight negative correlation with danceability (-0.2)
 - Common genres: jazz, classical, folk, ambient
 
-### Unpretentious (Sincere and conventional music)
+- **Unpretentious** (Sincere and conventional music)
 - High danceability (0.7)
 - Strong valence correlation (0.6)
 - Moderate acousticness (0.4)
 - Moderate energy correlation (0.3)
 - Common genres: country, pop, folk, rock
 
-### Sophisticated (Complex and creative music)
+- **Sophisticated** (Complex and creative music)
 - High instrumentalness (0.8)
 - Strong acousticness (0.6)
 - Moderate negative correlation with danceability (-0.3)
 - Common genres: classical, jazz, avant-garde, world
 
-### Intense (Forceful and energetic music)
+- **Intense** (Forceful and energetic music)
 - Very high energy correlation (0.9)
 - Negative valence correlation (-0.4)
 - Strong negative correlation with acousticness (-0.7)
 - Moderate positive correlation with danceability (0.3)
 - Common genres: rock, metal, punk, electronic
 
-### Contemporary (Rhythmic and popular music)
+- **Contemporary** (Rhythmic and popular music)
 - High danceability (0.8)
 - Strong energy presence (0.6)
 - Positive valence (0.5)
 - Moderate negative correlation with acousticness (-0.3)
 - Common genres: pop, rap, electronic, r&b
 
-## Multi-dimensional Scoring System
-
+#### Multi-dimensional Scoring System
 The matching algorithm employs a three-component weighted analysis system with comprehensive error handling and validation:
 
-### 1. MUSIC Dimensions Similarity (40% of total score)
+1. **MUSIC Dimensions Similarity (40%)**
 - Implements cosine similarity calculation between users' dimension profiles
 - Handles missing dimension data gracefully
 - Validates input dimensions before calculation
 - Returns 0 for invalid or missing dimension data
 - Normalizes dimension scores between 0 and 1
 
-### 2. Audio Features Similarity (30% of total score)
+2. **Audio Features Similarity (30%)**
 - Analyzes five key audio features:
   - Danceability
   - Energy
@@ -86,7 +83,7 @@ The matching algorithm employs a three-component weighted analysis system with c
 - Handles partial feature availability (calculates based on available features)
 - Returns 0 for completely invalid feature sets
 
-### 3. Genre Distribution Similarity (30% of total score)
+3. **Genre Distribution Similarity (30%)**
 - Implements sophisticated genre distribution analysis:
   - Case-insensitive genre matching
   - Handles multi-genre artists
