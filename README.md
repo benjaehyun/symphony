@@ -5,25 +5,23 @@ Symphony is an innovative Progressive Web Application (PWA) that revolutionizes 
 ## Technical Stack
 
 ### Frontend
-- React.js 18.2.0 with modern hooks and patterns
+- React.js with modern hooks and patterns
 - Redux Toolkit for state management with Redux Persist
 - TailwindCSS with custom Spotify-inspired theme
 - shadcn/ui component library
 - Socket.IO client for real-time features
-- Progressive Web App capabilities with Service Workers
 
 ### Backend
 - Node.js with Express.js
 - MongoDB with Mongoose ODM
 - Socket.IO for real-time communication
-- JWT and Spotify OAuth2 authentication
+- JWT and Spotify OAuth Flow with PKCE authentication
 - AWS S3 for media storage
-- Redis for caching
 
 ## Core Features
 
 ### Music Analysis & Matching Algorithm
-Symphony implements a sophisticated music analysis system based on Rentfrow's MUSIC model dimensions, incorporating detailed audio feature analysis and multi-dimensional compatibility scoring.
+Symphony implements a sophisticated music analysis system based on Rentfrow's MUSIC model dimensions [which could be found here](https://pmc.ncbi.nlm.nih.gov/articles/PMC3138530/), incorporating detailed audio feature analysis and multi-dimensional compatibility scoring.
 
 #### Musical Dimensions Analysis
 - **Mellow** (Romantic and relaxing music)
@@ -103,7 +101,6 @@ const FEATURE_RANGES = {
 - Multi-layer authentication combining JWT and Spotify OAuth2
 - Secure token management with automatic refresh
 - HTTP-only cookies for enhanced security
-- Protected route system with role-based access
 
 ### Profile Management
 #### Multi-step Profile Creation
@@ -150,7 +147,7 @@ const FEATURE_RANGES = {
 
 ### Discovery Interface
 - Gesture-based swipe interface using Framer Motion
-- Advanced profile card stack implementation
+- Profile card stack implementation
 - Efficient profile caching and prefetching
 - Responsive design adapting to device size
 - Touch-optimized controls for mobile
@@ -175,11 +172,10 @@ const FEATURE_RANGES = {
 - Efficient aggregation pipelines for unread counts
 - Message status tracking with timestamp management
 - Room-based message organization
-- Proper cleanup protocols
 
 
 ### API Integration
-- Sophisticated Spotify API integration with rate limiting
+- Spotify API integration with rate limiting
 - Batch processing for API calls
 - Comprehensive error handling
 - Automatic retry mechanism
@@ -190,10 +186,7 @@ const FEATURE_RANGES = {
 - Secure file upload validation
 
 ### Performance Optimizations
-- Lazy loading implementation
 - Image optimization pipeline
-- Efficient caching strategies
-- Bundle size optimization
 - Database query optimization
 
 ## Getting Started
