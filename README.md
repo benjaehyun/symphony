@@ -1,89 +1,144 @@
-# Symphony: Music-Based Dating Application
-
+# Symphony: Music-Based Dating App
 ## Overview
 Symphony is an innovative Progressive Web Application (PWA) that revolutionizes online dating by creating meaningful connections through musical compatibility. By leveraging deep Spotify integration and sophisticated musical analysis algorithms, Symphony matches users based on their musical preferences, listening patterns, and shared musical dimensions.
 
 ## Technical Stack
 
 ### Frontend
-- React.js 18.2.0 with modern hooks and patterns
+- React.js with modern hooks and patterns
 - Redux Toolkit for state management with Redux Persist
 - TailwindCSS with custom Spotify-inspired theme
 - shadcn/ui component library
 - Socket.IO client for real-time features
-- Progressive Web App capabilities with Service Workers
 
 ### Backend
 - Node.js with Express.js
 - MongoDB with Mongoose ODM
 - Socket.IO for real-time communication
-- JWT and Spotify OAuth2 authentication
+- JWT and Spotify OAuth Flow with PKCE authentication
 - AWS S3 for media storage
-- Redis for caching
 
 ## Core Features
 
 ### Music Analysis & Matching Algorithm
-Symphony implements a sophisticated music analysis system based on Rentfrow's MUSIC model dimensions, incorporating detailed audio feature analysis and multi-dimensional compatibility scoring.
+Symphony implements a sophisticated music analysis system based on Rentfrow's MUSIC model dimensions [which can be found here](https://pmc.ncbi.nlm.nih.gov/articles/PMC3138530/), incorporating detailed audio feature analysis and multi-dimensional compatibility scoring.
 
 #### Musical Dimensions Analysis
-- **Mellow** (Romantic and relaxing music)
-  - High acousticness (0.8) and instrumentalness (0.6)
-  - Negative correlation with energy (-0.7)
-  - Moderate valence (0.3)
-  - Common genres: jazz, classical, folk, ambient
-  
-- **Unpretentious** (Sincere and conventional music)
-  - Moderate acousticness (0.6)
-  - Negative complexity correlation (-0.7)
-  - Moderate energy (0.4)
-  - Common genres: country, pop, folk, rock
-  
-- **Sophisticated** (Complex and creative music)
-  - High instrumentalness (0.8)
-  - High complexity correlation (0.7)
-  - Moderate acousticness (0.5)
-  - Common genres: classical, jazz, avant-garde, world
-  
-- **Intense** (Forceful and energetic music)
-  - High energy correlation (0.9)
-  - Negative valence correlation (-0.4)
-  - Negative acousticness (-0.7)
-  - Common genres: rock, metal, punk, electronic
-  
-- **Contemporary** (Rhythmic and popular music)
-  - High danceability (0.8)
-  - Strong energy presence (0.6)
-  - Positive valence (0.5)
-  - Common genres: pop, rap, electronic, r&b
+The system analyzes five key musical dimensions, each characterized by specific audio feature weights:
+
+**Mellow** (Romantic and relaxing music)
+- High acousticness (0.8)
+- Negative correlation with energy (-0.7)
+- Moderate valence (0.3)
+- Moderate instrumentalness (0.4)
+- Slight negative correlation with danceability (-0.2)
+- Common genres: jazz, classical, folk, ambient
+
+**Unpretentious** (Sincere and conventional music)
+- High danceability (0.7)
+- Strong valence correlation (0.6)
+- Moderate acousticness (0.4)
+- Moderate energy correlation (0.3)
+- Common genres: country, pop, folk, rock
+
+**Sophisticated** (Complex and creative music)
+- High instrumentalness (0.8)
+- Strong acousticness (0.6)
+- Moderate negative correlation with danceability (-0.3)
+- Common genres: classical, jazz, avant-garde, world
+
+**Intense** (Forceful and energetic music)
+- Very high energy correlation (0.9)
+- Negative valence correlation (-0.4)
+- Strong negative correlation with acousticness (-0.7)
+- Moderate positive correlation with danceability (0.3)
+- Common genres: rock, metal, punk, electronic
+
+**Contemporary** (Rhythmic and popular music)
+- High danceability (0.8)
+- Strong energy presence (0.6)
+- Positive valence (0.5)
+- Moderate negative correlation with acousticness (-0.3)
+- Common genres: pop, rap, electronic, r&b
 
 #### Multi-dimensional Scoring System
-The matching algorithm employs a sophisticated three-component analysis:
+The matching algorithm employs a three-component weighted analysis system with comprehensive error handling and validation:
 
 1. **MUSIC Dimensions Similarity (40%)**
-   - Cosine similarity calculation between users' dimension profiles
-   - Dimension-specific feature weights:
-     - Mellow: High acousticness (0.8), negative energy (-0.7), moderate valence (0.3)
-     - Unpretentious: High danceability (0.7), strong valence (0.6)
-     - Sophisticated: High instrumentalness (0.8), high acousticness (0.6)
-     - Intense: Very high energy (0.9), negative valence (-0.4)
-     - Contemporary: High danceability (0.8), positive energy (0.6)
+- Implements cosine similarity calculation between users' dimension profiles
+- Handles missing dimension data gracefully
+- Validates input dimensions before calculation
+- Returns 0 for invalid or missing dimension data
+- Normalizes dimension scores between 0 and 1
 
 2. **Audio Features Similarity (30%)**
-   - Euclidean distance calculation for key audio features:
-     - Danceability
-     - Energy
-     - Valence
-     - Acousticness
-     - Instrumentalness
-   - Normalized similarity score (1 - normalized distance)
+- Analyzes five key audio features:
+  - Danceability
+  - Energy
+  - Valence
+  - Acousticness
+  - Instrumentalness
+- Calculates similarity using squared difference approach
+- Normalizes differences to produce similarity score between 0 and 1
+- Handles partial feature availability (calculates based on available features)
+- Returns 0 for completely invalid feature sets
 
 3. **Genre Distribution Similarity (30%)**
-   - Frequency-based genre distribution analysis
-   - Track-level genre aggregation from artists
-   - Minimum frequency overlap calculation
-   - Normalized genre similarity scoring
-   - Handles multi-genre artists effectively
+- Implements sophisticated genre distribution analysis:
+  - Case-insensitive genre matching
+  - Handles multi-genre artists
+  - Normalizes genre frequencies
+  - Accounts for genre overlap between profiles
+- Features include:
+  - Track-level genre aggregation from artists
+  - Frequency-based distribution calculation
+  - Normalization of genre weights
+  - Minimum frequency overlap calculation
+- Error handling for:
+  - Missing genre data
+  - Empty track lists
+  - Invalid artist data
+
+## Implementation Details
+
+### Genre Processing
+- Processes genres case-insensitively
+- Removes duplicates within track context
+- Normalizes genre frequencies across entire profile
+- Handles edge cases:
+  - Missing genre data
+  - Empty artist lists
+  - Invalid genre formats
+
+### Audio Feature Analysis
+- Calculates average features across all tracks
+- Validates feature availability for each track
+- Normalizes feature values to 0-1 range
+- Handles missing or invalid feature data
+
+### Compatibility Score Calculation
+- Validates input profiles for required data
+- Processes each similarity component independently
+- Applies weight factors to each component
+- Returns detailed subscores along with total score
+- Includes error information when calculation fails
+
+### Error Handling
+- Comprehensive validation of input data
+- Handles missing or invalid data
+- Detailed error logging for debugging
+- Fallback values for invalid calculations
+
+## Score Interpretation
+
+The final compatibility score is a weighted sum of the three components, normalized to a 0-1 range, where:
+- 0.8-1.0: Extremely high compatibility
+- 0.6-0.8: High compatibility
+- 0.4-0.6: Moderate compatibility
+- 0.2-0.4: Low compatibility
+- 0.0-0.2: Minimal compatibility
+
+Each subscore provides additional insight into specific aspects of musical compatibility between users.
 
 #### Feature Normalization
 Spotify audio features are normalized within specific ranges:
@@ -104,7 +159,6 @@ const FEATURE_RANGES = {
 - Multi-layer authentication combining JWT and Spotify OAuth2
 - Secure token management with automatic refresh
 - HTTP-only cookies for enhanced security
-- Protected route system with role-based access
 
 ### Profile Management
 #### Multi-step Profile Creation
@@ -151,7 +205,7 @@ const FEATURE_RANGES = {
 
 ### Discovery Interface
 - Gesture-based swipe interface using Framer Motion
-- Advanced profile card stack implementation
+- Profile card stack implementation
 - Efficient profile caching and prefetching
 - Responsive design adapting to device size
 - Touch-optimized controls for mobile
@@ -176,11 +230,10 @@ const FEATURE_RANGES = {
 - Efficient aggregation pipelines for unread counts
 - Message status tracking with timestamp management
 - Room-based message organization
-- Proper cleanup protocols
 
 
 ### API Integration
-- Sophisticated Spotify API integration with rate limiting
+- Spotify API integration with rate limiting
 - Batch processing for API calls
 - Comprehensive error handling
 - Automatic retry mechanism
@@ -191,17 +244,14 @@ const FEATURE_RANGES = {
 - Secure file upload validation
 
 ### Performance Optimizations
-- Lazy loading implementation
 - Image optimization pipeline
-- Efficient caching strategies
-- Bundle size optimization
 - Database query optimization
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js >= 18.x
-- MongoDB >= 5.x
+- Node.js 
+- MongoDB 
 - Spotify Developer Account
 - AWS Account for S3
 - NPM 
