@@ -17,13 +17,13 @@ const MusicDimensionsChart = ({ dimensions }) => {
   ];
 
   return (
-    <div className="w-full h-64 -ml-6"> {/* Negative margin to align with Spotify's style */}
+    <div className="w-full h-64 "> 
       <ResponsiveContainer width="100%" height="100%">
-        <RadarChart outerRadius={90} data={data}>
+        <RadarChart outerRadius={70} data={data}>
           <PolarGrid stroke="#2a2a2a" />
           <PolarAngleAxis 
             dataKey="dimension" 
-            tick={{ fill: '#a3a3a3', fontSize: 12 }} 
+            tick={{ fill: '#a3a3a3', fontSize: 11 }} 
           />
           <Radar
             name="Music Style"
@@ -39,15 +39,23 @@ const MusicDimensionsChart = ({ dimensions }) => {
 };
 
 const GenreDistribution = ({ genres }) => {
-  // Convert genre map to array and sort by frequency
-  const genreData = Array.from(genres).map(([genre, frequency]) => ({
-    genre,
-    frequency
-  })).sort((a, b) => b.frequency - a.frequency).slice(0, 5);
+  // Early return if no genres
+  if (!genres || typeof genres !== 'object') {
+    return (
+      <div className="text-muted-foreground text-sm text-center py-4">
+        No genre data available
+      </div>
+    );
+  }
+
+  // Convert object entries to sorted array
+  const sortedGenres = Object.entries(genres)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5);  // Take top 5 genres
 
   return (
     <div className="space-y-3">
-      {genreData.map(({ genre, frequency }) => (
+      {sortedGenres.map(([genre, frequency]) => (
         <div key={genre}>
           <div className="flex justify-between text-sm mb-1">
             <span>{genre}</span>
@@ -57,7 +65,7 @@ const GenreDistribution = ({ genres }) => {
           </div>
           <div className="h-2 bg-background rounded-full overflow-hidden">
             <div 
-              className="h-full bg-spotify-green rounded-full"
+              className="h-full bg-spotify-green rounded-full transition-all duration-200"
               style={{ width: `${frequency * 100}%` }}
             />
           </div>

@@ -66,7 +66,7 @@ const MobileMusicSheet = ({ profile, isOpen, onOpenChange }) => {
 
                 {/* Music Dimensions */}
                 <div className="rounded-lg bg-background p-4">
-                  <h3 className="font-semibold mb-4">Music Style</h3>
+                  <h3 className="font-semibold mb-4">Music Dimensions</h3>
                   <MusicDimensionsChart 
                     dimensions={profile.music.analysis.musicDimensions} 
                   />

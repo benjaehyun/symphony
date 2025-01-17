@@ -137,7 +137,6 @@ const profileSchema = new mongoose.Schema({
     },
     sourceId: {
       type: String,
-      required: true
     },
     tracks: [trackSchema],
     analysis: {
@@ -145,7 +144,10 @@ const profileSchema = new mongoose.Schema({
       genreDistribution: {
         type: Map,
         of: Number,
-        default: new Map()
+        default: new Map(),
+        get: function(v) {
+          return v instanceof Map ? Object.fromEntries(v) : v;
+        }
       },
       musicDimensions: musicDimensionsSchema
     },

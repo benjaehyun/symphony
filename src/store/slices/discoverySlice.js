@@ -95,15 +95,17 @@ const discoverySlice = createSlice({
         state.currentProfileIndex += 1;
       }
       // If we've reached the end of our current profiles
-      else if (state.currentProfileIndex === state.profiles.length - 1) {
-        // If we know there are no more to fetch, mark as depleted
-        if (!state.hasMore) {
-          state.status = DISCOVERY_STATUS.DEPLETED;
-        }
-        // Otherwise, mark as idle to trigger a new fetch
-        else {
-          state.status = DISCOVERY_STATUS.IDLE;
-        }
+      if (state.currentProfileIndex < state.profiles.length - 1) {
+        state.currentProfileIndex += 1;
+      }
+      // If we're getting close to the end of our current profiles and we know there are more
+      else if (state.hasMore && state.currentProfileIndex >= state.profiles.length - 3) {
+        // Set status to idle to trigger a new fetch
+        state.status = DISCOVERY_STATUS.IDLE;
+      }
+      // If we've reached the end and there are no more to fetch
+      else if (state.currentProfileIndex === state.profiles.length - 1 && !state.hasMore) {
+        state.status = DISCOVERY_STATUS.DEPLETED;
       }
     }
   },
@@ -122,9 +124,10 @@ const discoverySlice = createSlice({
           state.hasMore = false;
           return;
         }
-
+  
         state.status = DISCOVERY_STATUS.SUCCEEDED;
-        state.profiles.push(...action.payload.profiles);
+        // Append new profiles to existing ones
+        state.profiles = [...state.profiles, ...action.payload.profiles];
         state.hasMore = action.payload.hasMore;
       })
       .addCase(fetchDiscoveryProfiles.rejected, (state, action) => {

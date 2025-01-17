@@ -34,10 +34,10 @@ exports.getDiscoveryProfiles = async (req, res) => {
     
         // Add cursor-based pagination w lastId, if necessary
         if (req.query.lastId) {
-            query._id = { 
-            ...query._id,
-            $lt: req.query.lastId 
-            };
+          query._id = { 
+              ...query._id,
+              $lt: mongoose.Types.ObjectId(req.query.lastId)  // Convert to ObjectId
+          };
         }
     
         // Get batch of potential matches
@@ -45,7 +45,12 @@ exports.getDiscoveryProfiles = async (req, res) => {
         let profiles = await Profile.find(query)
             .select('-music.tracks') // Exclude full track data for efficiency
             .sort({ _id: -1 }) // Ensure consistent ordering for pagination
-            .limit(batchSize);
+            .limit(batchSize + 1);
+
+        const hasMore = profiles.length > batchSize;
+        if (hasMore) {
+            profiles = profiles.slice(0, batchSize); // Remove the extra profile
+        }
     
         // If no profiles found, return 
         if (!profiles.length) {
@@ -59,13 +64,23 @@ exports.getDiscoveryProfiles = async (req, res) => {
     
         // Calculate compatibility scores
         const scoredProfiles = await Promise.all(
-            profiles.map(async (profile) => {
+          profiles.map(async (profile) => {
+            // console.log('prescored profile', profile.music.analysis.genreDistribution);
             const compatibilityScore = await calculateCompatibilityScore(userProfile, profile);
+            const profileObj = profile.toObject();
+            
+            // Convert Map to plain object if it exists
+            if (profileObj.music?.analysis?.genreDistribution instanceof Map) {
+              profileObj.music.analysis.genreDistribution = Object.fromEntries(
+                profileObj.music.analysis.genreDistribution
+              );
+            }
+            
             return {
-                ...profile.toObject(),
-                compatibilityScore
+              ...profileObj,
+              compatibilityScore
             };
-            })
+          })
         );
     
         // Sort by compatibility score
@@ -73,7 +88,7 @@ exports.getDiscoveryProfiles = async (req, res) => {
     
         res.json({
             profiles: scoredProfiles,
-            hasMore: profiles.length === batchSize,
+            hasMore,
             lastId: profiles[profiles.length - 1]?._id,
             status: 'SUCCESS'
         });

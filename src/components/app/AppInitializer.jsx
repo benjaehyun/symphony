@@ -17,7 +17,7 @@ const AppInitializer = ({ children }) => {
   const { status: profileStatus } = useSelector(state => state.profile);
   const hasInitialized = useRef(false);
 
-  // Check if we're in the auth flow
+  // auth flow
   const isAuthFlow = ['/auth', '/spotify/callback', '/create-profile'].some(
     path => location.pathname.startsWith(path)
   );
@@ -26,67 +26,64 @@ const AppInitializer = ({ children }) => {
     let mounted = true;
 
     const initializeApp = async () => {
-      // Skip initialization for auth flows
+      // skip for auth flows
       if (isAuthFlow) {
         setIsInitialized(true);
         return;
       }
 
-      // Skip if already initialized or in auth flow
-      if (hasInitialized.current || isAuthFlow) {
+      // Skip if already initialized
+      if (hasInitialized.current) {
         setIsInitialized(true);
         return;
       }
 
-      if (authStatus === 'authenticated') {
+      // if not authenticated, we can initialize immediately
+      if (authStatus !== 'authenticated') {
+        setIsInitialized(true);
+        hasInitialized.current = true;
+        return;
+      }
+
+      // if authenticated
+      try {
+        // 1. Refresh token
         try {
-          // 1. Refresh token
-          try {
-            await axios.post(
-              `${process.env.REACT_APP_API_URL || '/api'}/auth/refresh`,
-              null,
-              { withCredentials: true }
-            );
-          } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError);
-            dispatch(logout());
-            return;
-          }
-
-          // 2. Fetch user profile if needed
-          if (!profileStatus || profileStatus === 'NOT_STARTED') {
-            await dispatch(fetchUserProfile()).unwrap();
-          }
-
-          // 3. Initialize app state
-          await Promise.all([
-            dispatch(fetchMatches({})).unwrap(),
-            dispatch(initializeMessageState()).unwrap()
-          ]);
-                    
-          // 4. Initialize socket and set up message handlers
-          const socket = await initializeSocket();
-          if (socket) {
-            dispatch({ type: 'socket/initialize' });
-          } else {
-            console.error('Socket initialization failed');
-          }
-
-          if (mounted) {
-            setIsInitialized(true);
-            hasInitialized.current = true;
-          }
-        } catch (error) {
-          console.error('App initialization failed:', error);
-          if (axios.isAxiosError(error) && error.response?.status === 401) {
-            dispatch(logout());
-          }
-          if (mounted) {
-            setIsInitialized(true);
-            hasInitialized.current = true;
-          }
+          await axios.post(
+            `${process.env.REACT_APP_API_URL || '/api'}/auth/refresh`,
+            null,
+            { withCredentials: true }
+          );
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+          dispatch(logout());
+          setIsInitialized(true);
+          return;
         }
-      } else {
+
+        if (!profileStatus || profileStatus === 'NOT_STARTED') {
+          await dispatch(fetchUserProfile()).unwrap();
+        }
+
+        await Promise.all([
+          dispatch(fetchMatches({})).unwrap(),
+          dispatch(initializeMessageState()).unwrap()
+        ]);
+                
+        const socket = await initializeSocket();
+        if (socket) {
+          dispatch({ type: 'socket/initialize' });
+        }
+
+        if (mounted) {
+          setIsInitialized(true);
+          hasInitialized.current = true;
+        }
+      } catch (error) {
+        console.error('App initialization failed:', error);
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          dispatch(logout());
+        }
         if (mounted) {
           setIsInitialized(true);
           hasInitialized.current = true;
@@ -96,27 +93,17 @@ const AppInitializer = ({ children }) => {
 
     initializeApp();
 
-    // Cleanup function
     return () => {
       mounted = false;
     };
   }, [authStatus, isAuthFlow, dispatch, profileStatus]);
 
-  // Handle auth status changes
   useEffect(() => {
     if (authStatus !== 'authenticated' && hasInitialized.current) {
       hasInitialized.current = false;
       setIsInitialized(false);
     }
   }, [authStatus]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      hasInitialized.current = false;
-      setIsInitialized(false);
-    };
-  }, []);
 
   if (!isInitialized && !isAuthFlow) {
     return (

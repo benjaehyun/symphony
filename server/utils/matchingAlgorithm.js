@@ -42,6 +42,17 @@ const MUSIC_DIMENSIONS = {
 };
 
 const calculateGenreDistribution = (profile) => {
+
+    // accomodating for seeded db and genre analysis
+    if (profile.music?.analysis?.genreDistribution) {
+        if (profile.music.analysis.genreDistribution instanceof Map) {
+            return profile.music.analysis.genreDistribution;
+        }
+        if (typeof profile.music.analysis.genreDistribution === 'object') {
+            return new Map(Object.entries(profile.music.analysis.genreDistribution));
+        }
+    }
+    
     const genreMap = new Map();
     const tracks = profile.music.tracks || [];
     const totalTracks = tracks.length;

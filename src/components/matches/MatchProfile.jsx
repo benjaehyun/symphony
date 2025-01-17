@@ -111,7 +111,7 @@ const MatchProfile = ({ match, onClose, onUnmatch }) => {
 
             <TabsContent value="overview" className="space-y-6">
               {/* Compatibility Score */}
-              <div className="rounded-lg bg-background p-4">
+              {/* <div className="rounded-lg bg-background p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="w-5 h-5 text-spotify-green" />
                   <h3 className="font-semibold">Music Match</h3>
@@ -119,7 +119,7 @@ const MatchProfile = ({ match, onClose, onUnmatch }) => {
                 <div className="text-3xl font-bold text-spotify-green">
                   {Math.round(match.compatibilityScore * 100)}%
                 </div>
-              </div>
+              </div> */}
 
               {/* Music Style */}
               <div className="rounded-lg bg-background p-4">
