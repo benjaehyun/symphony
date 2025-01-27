@@ -19,7 +19,7 @@ const ChatInput = ({ matchId, roomId }) => {
 
     try {
       setIsSending(true);
-      // Send message with matchId for routing and roomId for socket rooms
+      // send message with matchId for routing and roomId for socket rooms
       await dispatch(sendMessage({ 
         content: trimmedMessage,
         matchId,
@@ -30,7 +30,7 @@ const ChatInput = ({ matchId, roomId }) => {
       setMessage('');
     } catch (error) {
       console.error('Failed to send message:', error);
-      // Could add toast notification here for error
+      // maybe add toast notification here for error
     } finally {
       setIsSending(false);
     }
@@ -61,7 +61,7 @@ const ChatInput = ({ matchId, roomId }) => {
                     text-gray-900 dark:text-white placeholder:text-gray-500
                     border-none
                     disabled:opacity-50 disabled:cursor-not-allowed
-                    resize-none" // Prevent resizing
+                    resize-none" //testing resizing class for styling layout
           style={{ 
             minHeight: '44px',
             maxHeight: '100px'
