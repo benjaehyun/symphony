@@ -24,7 +24,7 @@ const Header = () => {
       )}
     >
       <div className="flex items-center justify-between">
-        {/* Navigation arrows - only visible on desktop */}
+        {/* Navigation arrows only on desktop */}
         <div className="hidden md:flex space-x-2">
           <button className="w-8 h-8 rounded-full bg-background/60 flex items-center justify-center">
             ←

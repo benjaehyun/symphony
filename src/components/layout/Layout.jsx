@@ -15,12 +15,12 @@ const Layout = ({ children }) => {
 
   return (
     <div className="h-[100dvh] bg-background flex flex-col md:flex-row">
-      {/* Sidebar - hidden on mobile */}
+      {/* Sidebar hidden on mobile */}
       <div className="hidden md:flex md:w-[280px] md:flex-shrink-0">
         <Sidebar />
       </div>
 
-      {/* Main content area */}
+      {/* Main content  */}
       <main className="flex-1 min-h-0">
         <Header />
         <div className="px-4 md:px-8 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-8 
@@ -29,10 +29,10 @@ const Layout = ({ children }) => {
         </div>
       </main>
 
-      {/* Mobile navigation - visible only on mobile */}
+      {/* Mobile navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background-elevated">
         <MobileNav />
-        {/* Add safe area padding for iOS */}
+        {/* safe area padding for iOS */}
         <div className="h-[env(safe-area-inset-bottom)] bg-background-elevated" />
       </div>
     </div>

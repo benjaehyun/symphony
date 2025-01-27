@@ -44,7 +44,7 @@ const MatchInfo = ({ match, onClose, onUnmatch, showTopBar = true }) => {
         </div>
       )}
 
-      {/* Actions Bar */}
+      {/* action bar */}
       <div className="px-6 py-4 border-b border-border">
         <Button 
           className="w-full"
@@ -55,7 +55,7 @@ const MatchInfo = ({ match, onClose, onUnmatch, showTopBar = true }) => {
         </Button>
       </div>
 
-      {/* Music Profile Section */}
+      {/* profile music  */}
       <ScrollArea className="flex-1">
         <div className="p-6">
           <Tabs defaultValue="overview" className="w-full">

@@ -41,7 +41,7 @@ const MatchProfile = ({ match, onClose, onUnmatch }) => {
           />
         </AnimatePresence>
 
-        {/* Photo Navigation */}
+        {/* Photo nav */}
         <div className="absolute top-4 left-0 right-0 flex justify-center gap-1.5 z-10">
           {profile.photos.map((_, index) => (
             <button

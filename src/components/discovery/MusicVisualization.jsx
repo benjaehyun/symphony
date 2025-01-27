@@ -39,7 +39,7 @@ const MusicDimensionsChart = ({ dimensions }) => {
 };
 
 const GenreDistribution = ({ genres }) => {
-  // Early return if no genres
+  // if no genres
   if (!genres || typeof genres !== 'object') {
     return (
       <div className="text-muted-foreground text-sm text-center py-4">
@@ -48,10 +48,10 @@ const GenreDistribution = ({ genres }) => {
     );
   }
 
-  // Convert object entries to sorted array
+  // convert object entries to sorted array
   const sortedGenres = Object.entries(genres)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 5);  // Take top 5 genres
+    .slice(0, 5);  
 
   return (
     <div className="space-y-3">

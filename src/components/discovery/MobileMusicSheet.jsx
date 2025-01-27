@@ -44,7 +44,8 @@ const MobileMusicSheet = ({ profile, isOpen, onOpenChange }) => {
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6 mt-4">
-                {/* Compatibility Score */}
+
+                {/* compatibility scores */}
                 <div className="rounded-lg bg-background p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Sparkles className="w-5 h-5 text-spotify-green" />
@@ -64,7 +65,7 @@ const MobileMusicSheet = ({ profile, isOpen, onOpenChange }) => {
                   </div>
                 </div>
 
-                {/* Music Dimensions */}
+                {/* dimensions */}
                 <div className="rounded-lg bg-background p-4">
                   <h3 className="font-semibold mb-4">Music Dimensions</h3>
                   <MusicDimensionsChart 

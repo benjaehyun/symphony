@@ -26,13 +26,13 @@ const AppInitializer = ({ children }) => {
     let mounted = true;
 
     const initializeApp = async () => {
-      // skip for auth flows
+      // skip its an auth flows
       if (isAuthFlow) {
         setIsInitialized(true);
         return;
       }
 
-      // Skip if already initialized
+      // skip if already initialized
       if (hasInitialized.current) {
         setIsInitialized(true);
         return;
@@ -47,7 +47,7 @@ const AppInitializer = ({ children }) => {
 
       // if authenticated
       try {
-        // 1. Refresh token
+        // 1. refresh token
         try {
           await axios.post(
             `${process.env.REACT_APP_API_URL || '/api'}/auth/refresh`,

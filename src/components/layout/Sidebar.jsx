@@ -49,7 +49,7 @@ const Sidebar = () => {
         <h1 className="text-2xl font-bold text-spotify-green">Symphony</h1>
       </div>
 
-      {/* Navigation */}
+      {/* Nav */}
       <nav className="space-y-2">
         {navigationItems.map((item) => (
           <Link

@@ -8,7 +8,7 @@ const ProfileCreationLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header - Fixed on mobile, static on desktop */}
+      {/* Header  */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="px-4 md:px-8 h-14 flex items-center max-w-4xl mx-auto">
           <button 
@@ -24,12 +24,11 @@ const ProfileCreationLayout = ({ children }) => {
         </div>
       </header>
 
-      {/* Main content area with max width and padding */}
+      {/* Main content */}
       <main className="mx-auto max-w-4xl px-4 md:px-8">
-        {/* Content wrapper with responsive spacing */}
+        {/* Content wrapper for responsive spacing */}
         <div className={cn(
           "py-6 md:py-8",
-          // Add bottom padding on mobile to account for fixed bottom bar
           "pb-24 md:pb-8"
         )}>
           {children}

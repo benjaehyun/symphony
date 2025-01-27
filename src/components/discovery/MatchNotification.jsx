@@ -22,7 +22,7 @@ const MatchContent = ({ match, onClose, onMessage }) => {
   return (
     <Card className="bg-background border-0 shadow-none">
       <CardContent className="p-6 flex flex-col items-center">
-        {/* Close Button */}
+        {/* button to close */}
         <div className="w-full flex justify-end mb-2">
           <Button 
             variant="ghost" 
@@ -34,7 +34,7 @@ const MatchContent = ({ match, onClose, onMessage }) => {
           </Button>
         </div>
 
-        {/* Match Header */}
+        {/* Header */}
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold mb-2">It's a Match!</h2>
           <p className="text-muted-foreground">
@@ -42,7 +42,7 @@ const MatchContent = ({ match, onClose, onMessage }) => {
           </p>
         </div>
 
-        {/* Profile Pictures */}
+        {/* Profile pics */}
         <div className="flex items-center justify-center gap-6 mb-8">
           <div className="relative">
             <Avatar className="w-24 h-24 border-4 border-background-elevated">
@@ -66,7 +66,7 @@ const MatchContent = ({ match, onClose, onMessage }) => {
           </div>
         </div>
 
-        {/* Music Info */}
+        {/* music source */}
         <div className="flex items-center gap-2 text-muted-foreground mb-8">
           <Music2 className="w-4 h-4" />
           <span className="text-sm">
@@ -74,7 +74,7 @@ const MatchContent = ({ match, onClose, onMessage }) => {
           </span>
         </div>
 
-        {/* Action Buttons */}
+        {/* action buttons */}
         <div className="w-full space-y-3">
           <Button 
             className="w-full"

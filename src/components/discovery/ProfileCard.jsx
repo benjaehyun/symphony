@@ -18,7 +18,7 @@ const ProfileCard = ({
     const x = useMotionValue(0);
     const y = useMotionValue(0);
     
-    // Transform values
+    // transformation constants
     const rotate = useTransform(x, [-200, 200], [-20, 20]);
     const likeOpacity = useTransform(x, [0, 100], [0, 1]);
     const dislikeOpacity = useTransform(x, [-100, 0], [1, 0]);
@@ -57,7 +57,7 @@ const ProfileCard = ({
         }
     };
 
-    // Card appearance/exit animations
+    // card animations
     const cardVariants = {
         enter: {
         scale: 0.9,
@@ -82,7 +82,7 @@ const ProfileCard = ({
     };
 
     const nextPhoto = (e) => {
-        e.stopPropagation(); // Prevent triggering parent click handlers
+        e.stopPropagation(); 
         if (currentPhotoIndex < profile.photos.length - 1) {
           setCurrentPhotoIndex(prev => prev + 1);
         }
@@ -107,9 +107,9 @@ const ProfileCard = ({
         >
             <Card className="relative w-full h-full overflow-hidden bg-background">
                 <div className="absolute inset-0">
-                {/* Photos Container */}
+                {/* Photos  */}
                 <div className="relative w-full h-full">
-                    {/* Photo Navigation Areas */}
+                    {/* Photo Navigation  */}
                     <div 
                     className="absolute left-0 top-0 bottom-0 w-1/3 z-10"
                     onClick={prevPhoto}
@@ -119,7 +119,7 @@ const ProfileCard = ({
                     onClick={nextPhoto}
                     />
 
-                    {/* Current Photo */}
+                    {/* active photo */}
                     <motion.img 
                     key={currentPhotoIndex}
                     src={profile.photos[currentPhotoIndex]?.url}
@@ -131,7 +131,7 @@ const ProfileCard = ({
                     transition={{ duration: 0.2 }}
                     />
 
-                    {/* Photo Navigation Dots */}
+                    {/* photo navigation dots */}
                     <div className="absolute top-4 left-0 right-0 flex justify-center gap-1.5 z-10">
                     {profile.photos.map((_, index) => (
                         <button
@@ -152,7 +152,7 @@ const ProfileCard = ({
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                 </div>
 
-                {/* Like/Dislike Indicators remain the same */}
+                    {/* like dislike  */}
                 {isTop && (
                     <>
                     <motion.div
@@ -174,7 +174,7 @@ const ProfileCard = ({
                     </>
                 )}
 
-                {/* Profile Info remains the same */}
+                {/* Profile Info */}
                 <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
                     <h2 className="text-2xl font-bold text-white">
                     {profile.name}, {profile.age}
