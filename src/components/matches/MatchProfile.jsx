@@ -67,10 +67,10 @@ const MatchProfile = ({ match, onClose, onUnmatch }) => {
         />
 
 
-        {/* Gradient Overlay */}
+        {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
 
-        {/* Profile Info Overlay */}
+        {/* Profile info overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 z-10">
           <h2 className="text-2xl font-bold text-white">
             {profile.name}, {profile.age}
@@ -79,7 +79,7 @@ const MatchProfile = ({ match, onClose, onUnmatch }) => {
         </div>
       </div>
 
-      {/* Actions Bar */}
+      {/* actions bar */}
       <div className="p-4 border-b border-border flex gap-2">
         <Button 
           className="flex-1"
@@ -90,7 +90,7 @@ const MatchProfile = ({ match, onClose, onUnmatch }) => {
         </Button>
       </div>
 
-      {/* Music Profile Section */}
+      {/* profile music section */}
       <ScrollArea className="flex-1">
         <div className="p-6">
           <Tabs defaultValue="overview" className="w-full">
