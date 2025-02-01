@@ -43,7 +43,7 @@ exports.getConversationPreviews = async (req, res) => {
             return res.status(404).json({ message: 'Profile not found' });
         }
 
-        // Get all active match room IDs
+        // Get all active room IDs from matches
         const roomIds = userProfile.matches
             .filter(match => match.status === 'active')
             .map(match => {
@@ -51,7 +51,7 @@ exports.getConversationPreviews = async (req, res) => {
                 return participants.join('_');
             });
 
-        // Get last message for each room
+        // Get most recent message for every room
         const lastMessages = await Message.aggregate([
             // Match messages from user's rooms
             { $match: { roomId: { $in: roomIds } } },
@@ -85,7 +85,7 @@ exports.sendMessage = async (req, res) => {
             return res.status(404).json({ message: 'Profile not found' });
         }
 
-        // Create message
+        // creating message
         const message = await Message.create({
             roomId,
             senderId: userProfile._id,
@@ -94,7 +94,7 @@ exports.sendMessage = async (req, res) => {
             status: 'sent'
         });
 
-        // Emit socket event if available
+        // Emit socket event if connected
         if (req.io) {
             req.io.to(roomId).emit('message:receive', {
                 roomId,
@@ -169,7 +169,7 @@ exports.getUnreadCount = async (req, res) => {
                 return participants.join('_');
             });
 
-        // Count distinct rooms with unread messages
+        // Count the rooms with unread messages
         const unreadConversations = await Message.aggregate([
             {
                 $match: {
