@@ -97,19 +97,19 @@ exports.unmatch = async (req, res) => {
       return res.status(404).json({ message: 'Profile not found' });
     }
 
-    // Find and remove the match
+    // edge case 
     const match = userProfile.matches.id(matchId);
     if (!match) {
       return res.status(404).json({ message: 'Match not found' });
     }
 
-    // Also remove the match from the other user's profile
+    // remove the match from the other user's profile
     await Profile.updateOne(
       { _id: match.matchedProfile },
       { $pull: { matches: { matchedProfile: userProfile._id } } }
     );
 
-    // Remove match from current user's profile
+    // Remove from current user's profile
     userProfile.matches.pull(matchId);
     await userProfile.save();
 

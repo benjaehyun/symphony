@@ -10,10 +10,10 @@ exports.getDiscoveryProfiles = async (req, res) => {
             return res.status(404).json({ message: 'Profile not found' });
         }
     
-        // Get profiles based on preferences, excluding:
+        // profiles to exclude:
         // - Own profile
         // - Already liked profiles
-        // - Already disliked profiles
+        // - already disliked profiles
         // - Already matched profiles
         const excludedProfiles = [
             userProfile._id,
@@ -36,14 +36,14 @@ exports.getDiscoveryProfiles = async (req, res) => {
         if (req.query.lastId) {
           query._id = { 
               ...query._id,
-              $lt: mongoose.Types.ObjectId(req.query.lastId)  // Convert to ObjectId
+              $lt: mongoose.Types.ObjectId(req.query.lastId)  // converting to objectId
           };
         }
     
         // Get batch of potential matches
         const batchSize = 10;
         let profiles = await Profile.find(query)
-            .select('-music.tracks') // Exclude full track data for efficiency
+            .select('-music.tracks') // Exclude track data for efficiency
             .sort({ _id: -1 }) // Ensure consistent ordering for pagination
             .limit(batchSize + 1);
 
@@ -52,14 +52,14 @@ exports.getDiscoveryProfiles = async (req, res) => {
             profiles = profiles.slice(0, batchSize); // Remove the extra profile
         }
     
-        // If no profiles found, return 
+        // If no profiles found, return set ds for redux
         if (!profiles.length) {
-            return res.json({
-            profiles: [],
-            hasMore: false,
-            status: 'NO_PROFILES',
-            message: 'No more profiles available'
-            });
+          return res.json({
+          profiles: [],
+          hasMore: false,
+          status: 'NO_PROFILES',
+          message: 'No more profiles available'
+          });
         }
     
         // Calculate compatibility scores
@@ -69,7 +69,7 @@ exports.getDiscoveryProfiles = async (req, res) => {
             const compatibilityScore = await calculateCompatibilityScore(userProfile, profile);
             const profileObj = profile.toObject();
             
-            // Convert Map to plain object if it exists
+            // Converting to plain object if it exists, bc of weird inconsistency of passing object
             if (profileObj.music?.analysis?.genreDistribution instanceof Map) {
               profileObj.music.analysis.genreDistribution = Object.fromEntries(
                 profileObj.music.analysis.genreDistribution
@@ -112,7 +112,7 @@ exports.likeProfile = async (req, res) => {
       return res.status(404).json({ message: 'Profile not found' });
     }
 
-    // Check if already liked
+    // Check if already liked but should be unnecessary 
     if (userProfile.likes.includes(profileId)) {
       return res.json({ match: false, alreadyLiked: true });
     }
@@ -120,7 +120,7 @@ exports.likeProfile = async (req, res) => {
     // Add to likes
     userProfile.likes.push(profileId);
 
-    // Check for mutual like (match)
+    // Check for match, aka mutual like 
     const otherProfile = await Profile.findById(profileId);
     if (otherProfile.likes.includes(userProfile._id)) {
       // Create match objects for both users

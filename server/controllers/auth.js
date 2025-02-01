@@ -22,7 +22,7 @@ exports.register = async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
-    // Check if user exists
+    // check for existing user
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ 
@@ -31,11 +31,11 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Create new user
+    // create the user
     const user = new User({ email, password, name });
     await user.save();
 
-    // Generate tokens
+    // generate jwt 
     const tokens = generateTokens(user._id);
 
     // Set cookies
@@ -131,7 +131,7 @@ exports.login = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
-  // Clear access token with same options used when setting
+  // Clear access token being, being sure to use same settings  as when we set it 
   res.clearCookie('accessToken', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -139,7 +139,7 @@ exports.logout = (req, res) => {
     path: '/'
   });
 
-  // Clear refresh token with same options used when setting
+  // Clear refresh token with same options
   res.clearCookie('refreshToken', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -191,16 +191,16 @@ exports.checkStatus = async (req, res) => {
     // Since requireAuth middleware already verified the token,
     // we can fetch the full user data
     const user = await User.findById(req.user.id)
-      .select('-password'); // Exclude password
+      .select('-password'); // exclude password
 
     if (!user) {
       return res.status(404).json({ 
         message: 'User not found',
-        code: 'USER_NOT_FOUND'  // Add error codes
+        code: 'USER_NOT_FOUND'  
       });
     }
 
-    // Return user data with Spotify connection status
+    // return with spotify connection status
     res.json({
       user: {
         id: user._id,
@@ -283,7 +283,7 @@ exports.updateSpotifyTokens = async (req, res) => {
 
 exports.getSpotifyTokens = async (req, res) => {
   try {
-    // Explicitly select spotify fields including accessToken which is normally excluded
+    // specifically select spotify fields with accessToken which is normally excluded
     const user = await User.findById(req.user.id)
       .select('+spotify.accessToken spotify.refreshToken spotify.tokenExpiry spotify.isConnected');
 
