@@ -1,7 +1,4 @@
 # Symphony: Music-Based Dating App
-## Overview
-Symphony is an innovative Progressive Web Application (PWA) that revolutionizes online dating by creating meaningful connections through musical compatibility. By leveraging deep Spotify integration and sophisticated musical analysis algorithms, Symphony matches users based on their musical preferences, listening patterns, and shared musical dimensions.
-
 ## Note
 - On November 2024, Spotify discontinued support for the audio features and analysis, making new users unable to sign up for the application when being run. Fortunately, during the development
 and testing phase of this application, I was able to create test users which are able to be used for demo purposes. I am currently exploring alternative options.
@@ -9,6 +6,11 @@ and testing phase of this application, I was able to create test users which are
 
 - For a preview of the project, I have app media and demos on my portfolio as well as additional information about the project on my
 [portfolio project page.](https://www.benjaelee.com/projects/symphony) 
+
+
+## Overview
+Symphony is an innovative Progressive Web Application (PWA) that revolutionizes online dating by creating meaningful connections through musical compatibility. By leveraging deep Spotify integration and sophisticated musical analysis algorithms, Symphony matches users based on their musical preferences, listening patterns, and shared musical dimensions.
+
 
 ## Technical Stack
 
