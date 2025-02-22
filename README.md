@@ -4,7 +4,7 @@ Symphony is an innovative Progressive Web Application (PWA) that revolutionizes 
 
 ## Note
 - On November 2024, Spotify discontinued support for the audio features and analysis, making new users unable to sign up for the application when being run. Fortunately, during the development
-and testing phase of this application, I was able to create test users which are able to be used for testing purposes. 
+and testing phase of this application, I was able to create test users which are able to be used for demo purposes. I am currently exploring alternative options.
 [Read more about it here.](https://developer.spotify.com/blog/2024-11-27-changes-to-the-web-api)
 
 - For a preview of the project, I have app media and demos on my portfolio as well as additional information about the project on my
