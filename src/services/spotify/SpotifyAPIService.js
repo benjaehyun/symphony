@@ -82,7 +82,7 @@ export class SpotifyAPIService {
     }
   }
 
-  async fetchPlaylists(limit = 20, offset = 0) {
+  async fetchPlaylists(limit = 50, offset = 0) {
     try {
       // Create cache key that includes pagination params
       const cacheKey = `playlists-${limit}-${offset}`;
