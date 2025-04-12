@@ -9,7 +9,7 @@ and testing phase of this application, I was able to create test users which are
 
 
 ## Overview
-Symphony is an innovative Progressive Web Application (PWA) that revolutionizes online dating by creating meaningful connections through musical compatibility. By leveraging deep Spotify integration and sophisticated musical analysis algorithms, Symphony matches users based on their musical preferences, listening patterns, and shared musical dimensions.
+Symphony was developed as a Progressive Web App (PWA) that rethinks online dating by creating meaningful connections through musical compatibility. By leveraging Spotify's robust data analytics on music and musical analysis algorithms rooted in Psychology research, Symphony matches users based on their musical preferences, listening patterns, and shared musical dimensions.
 
 
 ## Technical Stack
@@ -31,7 +31,7 @@ Symphony is an innovative Progressive Web Application (PWA) that revolutionizes 
 ## Core Features
 
 ### Music Analysis & Matching Algorithm
-Symphony implements a sophisticated music analysis system based on Rentfrow's MUSIC model dimensions [which can be found here](https://pmc.ncbi.nlm.nih.gov/articles/PMC3138530/), incorporating detailed audio feature analysis and multi-dimensional compatibility scoring.
+Symphony implements a music analysis system based on Rentfrow's MUSIC model dimensions [which can be found here](https://pmc.ncbi.nlm.nih.gov/articles/PMC3138530/), incorporating detailed audio feature analysis and multi-dimensional compatibility scoring.
 
 #### Musical Dimensions Analysis
 The system analyzes five key musical dimensions, each characterized by specific audio feature weights:
